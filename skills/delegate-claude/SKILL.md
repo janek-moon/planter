@@ -18,7 +18,7 @@ Capture the target screen. If claude is already running (input box, or "esc to i
 - tmux: `tmux send-keys -t <target> 'claude' Enter`
 - cmux: `cmux send --surface <ref> 'claude'` then `cmux send-key --surface <ref> enter`
 
-Re-capture every 2–3 s (up to ~30 s) until the input box renders. If it never does, report the captured screen verbatim.
+Re-capture every 2–3 s (up to ~30 s; this faster poll applies to startup only — steady-state monitoring follows the planter:delegate contract) until the input box renders. If it never does, report the captured screen verbatim.
 
 A trust/permission dialog may render first ("Do you trust the files in this folder?"). Do NOT answer dialogs yourself unless the user authorized it — report what the dialog says.
 
@@ -38,7 +38,7 @@ Re-capture to confirm the text sits in the input box BEFORE sending Enter.
 
 ## Step 3: Completion and report
 
-Working: spinner / "esc to interrupt" visible. Done: working indicators gone, input box idle — confirm with two identical captures per the monitoring contract. Report the final response from scrollback (`tmux capture-pane -p -J -S -200 -t <target>`).
+Working: spinner / "esc to interrupt" visible. Done: working indicators gone, input box idle — confirm with two identical captures per the monitoring contract. An idle input box is not proof of completion on its own — claude may be asking a follow-up question, which also yields identical captures. Read the captured content: if it ends in a question or a request for input, report that to the user instead of declaring the task done. Report the final response from scrollback (`tmux capture-pane -p -J -S -200 -t <target>`).
 
 If the screen shows a permission request from the delegated claude, report it to the user instead of pressing keys on it.
 
