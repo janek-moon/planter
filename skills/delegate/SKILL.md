@@ -31,6 +31,7 @@ cmux:
 - Exists? Match the title in `cmux list-workspaces`; surface-level targets via `cmux tree`.
 - Create a workspace: `cmux new-workspace --name <name> --cwd <cwd>`
 - Add a surface to an existing workspace: `cmux new-surface --workspace <ref>` then `cmux rename-tab --surface <ref> <name>`
+- Prefer UUID refs for cmux targets (`--id-format uuids`); short refs like `surface:<n>` shift when surfaces close — re-resolve them at send time.
 
 ## Step 3: Inspect before injecting
 
@@ -50,7 +51,7 @@ If a foreground program (editor, REPL, running job) occupies the target, STOP �
 
 ## Monitoring contract (used by all runners)
 
-Default: after injection, poll the target screen every 15–30 seconds. The task is done when the runner's completion signal fires AND two consecutive captures are identical. Then report a summary of the final output (use scrollback: `tmux capture-pane -p -S -200 -t <target>` / `cmux read-screen --scrollback`). If 10 minutes pass without completion, report interim status before continuing.
+Default: after injection, poll the target screen every 15–30 seconds. The task is done when the runner's completion signal fires AND two consecutive captures are identical. Then report a summary of the final output (use scrollback: `tmux capture-pane -p -S -200 -t <target>` / `cmux read-screen --workspace <ref> --surface <ref> --scrollback`). If 10 minutes pass without completion, report interim status before continuing.
 
 Fire-and-forget (only when the user asks): confirm the payload landed with one capture, then stop — no polling, no result report.
 
