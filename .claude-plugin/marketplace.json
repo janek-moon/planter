@@ -1,0 +1,14 @@
+{
+  "name": "planter",
+  "owner": {
+    "name": "Janek",
+    "email": "eunho.moon@gmail.com"
+  },
+  "plugins": [
+    {
+      "name": "planter",
+      "source": "./",
+      "description": "Delegate tasks to named tmux/cmux sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back"
+    }
+  ]
+}
