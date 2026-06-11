@@ -2,7 +2,7 @@
 
 [English](README.md) · **한국어**
 
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/88223315-ebca-4f2c-a4ee-fe702f18b372" />
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
 Claude Code 세션의 작업을 이름이 지정된 **tmux** 또는 **cmux** 세션에 위임합니다 —
 세션을 찾거나 새로 만들고, 그 안에서 `claude`(기본), `codex`, 또는 일반 셸을
