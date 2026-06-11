@@ -1,5 +1,7 @@
 # planter 🌱
 
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/88223315-ebca-4f2c-a4ee-fe702f18b372" />
+
 Delegate tasks from a Claude Code session to named **tmux** or **cmux**
 sessions — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
