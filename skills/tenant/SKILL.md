@@ -1,5 +1,5 @@
 ---
-name: delegate
+name: tenant
 description: Use when the user asks to delegate, hand off, or run a task in another terminal session, window, pane, surface, or workspace — e.g. "run this in the build session", "build 세션에서 돌려줘", "delegate this to a new session" — on tmux or cmux
 ---
 
@@ -45,9 +45,9 @@ If a foreground program (editor, REPL, running job) occupies the target, STOP �
 
 | Request | Runner |
 |---|---|
-| default, or "claude" | planter:delegate-claude |
-| "codex" | planter:delegate-codex |
-| plain shell command / "shell" | planter:delegate-shell |
+| default, or "claude" | planter:tenant-claude |
+| "codex" | planter:tenant-codex |
+| plain shell command / "shell" | planter:tenant-shell |
 
 ## Monitoring contract (used by all runners)
 

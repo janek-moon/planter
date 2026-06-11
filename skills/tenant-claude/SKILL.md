@@ -1,5 +1,5 @@
 ---
-name: delegate-claude
+name: tenant-claude
 description: Use when a task delegated to a tmux/cmux session should run under the claude CLI — the default planter runner when the user names no other tool
 ---
 
@@ -9,7 +9,7 @@ description: Use when a task delegated to a tmux/cmux session should run under t
 
 Launch or reuse a `claude` instance in the target session, inject the task prompt, then watch the screen for completion.
 
-**REQUIRED BACKGROUND:** planter:delegate defines target resolution and the monitoring contract.
+**REQUIRED BACKGROUND:** planter:tenant defines target resolution and the monitoring contract.
 
 ## Step 1: Launch or reuse
 
@@ -18,7 +18,7 @@ Capture the target screen. If claude is already running (input box, or "esc to i
 - tmux: `tmux send-keys -t <target> 'claude' Enter`
 - cmux: `cmux send --surface <ref> 'claude'` then `cmux send-key --surface <ref> enter`
 
-Re-capture every 2–3 s (up to ~30 s; this faster poll applies to startup only — steady-state monitoring follows the planter:delegate contract) until the input box renders. If it never does, report the captured screen verbatim.
+Re-capture every 2–3 s (up to ~30 s; this faster poll applies to startup only — steady-state monitoring follows the planter:tenant contract) until the input box renders. If it never does, report the captured screen verbatim.
 
 A trust/permission dialog may render first ("Do you trust the files in this folder?"). Do NOT answer dialogs yourself unless the user authorized it — report what the dialog says.
 

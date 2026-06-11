@@ -1,5 +1,5 @@
 ---
-name: delegate-shell
+name: tenant-shell
 description: Use when a task delegated to a tmux/cmux session is a plain shell command, or the user asks for a plain shell instead of an AI agent in the target session
 ---
 
@@ -9,7 +9,7 @@ description: Use when a task delegated to a tmux/cmux session is a plain shell c
 
 Inject a shell command into the target session with a sentinel suffix so completion and success/failure are detected from the screen, not guessed.
 
-**REQUIRED BACKGROUND:** planter:delegate defines target resolution and the monitoring contract.
+**REQUIRED BACKGROUND:** planter:tenant defines target resolution and the monitoring contract.
 
 ## Step 1: Verify a shell prompt
 
@@ -50,7 +50,7 @@ cmux read-screen --workspace <ref> --surface <ref> --scrollback | grep -E '^PLAN
 
 Report DONE/FAIL plus the output lines between the command and the sentinel. On FAIL, include the error output verbatim — do not paraphrase.
 
-Fire-and-forget: skip Steps 3–4 (see planter:delegate).
+Fire-and-forget: skip Steps 3–4 (see planter:tenant).
 
 ## Common Mistakes
 

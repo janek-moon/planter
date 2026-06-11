@@ -15,10 +15,10 @@ plain shell in it, monitor the screen, and report the result back.
 
 | Skill | Purpose |
 |---|---|
-| `planter:delegate` | Entry point: detects tmux/cmux, finds or creates the named session, routes to a runner |
-| `planter:delegate-claude` | Runs the task under the `claude` CLI (default runner) |
-| `planter:delegate-codex` | Runs the task under the `codex` CLI |
-| `planter:delegate-shell` | Runs a plain shell command with sentinel-based completion detection |
+| `planter:tenant` | Entry point: detects tmux/cmux, finds or creates the named session, routes to a runner |
+| `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
+| `planter:tenant-codex` | Runs the task under the `codex` CLI |
+| `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 
 ## Usage
 
