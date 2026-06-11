@@ -2,7 +2,7 @@
 
 **English** · [한국어](README.ko.md)
 
-<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/88223315-ebca-4f2c-a4ee-fe702f18b372" />
+<img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
 Delegate tasks from a Claude Code session to named **tmux** or **cmux**
 sessions — find or create the session, run `claude` (default), `codex`, or a
