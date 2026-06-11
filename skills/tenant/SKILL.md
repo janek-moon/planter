@@ -20,17 +20,21 @@ Hand a task to a named session under tmux or cmux: detect the live multiplexer f
 
 Priority: backend the user explicitly named > innermost mux you are running inside (`$TMUX` wins when both are set) > whichever live server responds. If nothing responds, STOP and report that delegation is impossible — never start a tmux/cmux server yourself.
 
-## Step 2: Find or create the target
+## Step 2: Find or create the target — keep it visible
+
+Create the target **where the user can watch it**: a split in the session you are already inside, not a hidden background session. Only fall back to a detached session when you are NOT running inside the multiplexer.
 
 tmux:
-- Exists? `tmux has-session -t <name> 2>/dev/null`
-- Create: `tmux new-session -d -s <name> -c <cwd>`
-- Finer targets: `-t <session>:<window>.<pane>`. Indexes shift when windows/panes close — resolve them immediately before sending, never from memory.
+- Exists? Match a pane titled `<name>`: `tmux list-panes -a -F '#{pane_title}\t#{pane_id}'` — reuse its `#{pane_id}` if found.
+- Create (visible — when inside tmux, `$TMUX` set): split the current window and capture the new pane id:
+  `tmux split-window -d -h -c <cwd> -P -F '#{pane_id}'` → prints e.g. `%30`. Title it so it can be found again: `tmux select-pane -t <pane_id> -T <name>`. `-d` keeps your focus put; use `-v` for a top/bottom split.
+- Create (fallback — when NOT inside tmux, no current window to split): `tmux new-session -d -s <name> -c <cwd>`, then tell the user to `tmux attach -t <name>` to watch.
+- The target is the pane id (`%N`) or `<session>:<window>.<pane>`. Indexes/ids shift when panes close — resolve them immediately before sending, never from memory.
 
-cmux:
+cmux (surfaces are always shown in the app — keep `--focus`, the default, so it surfaces in front):
 - Exists? Match the title in `cmux list-workspaces`; surface-level targets via `cmux tree`.
-- Create a workspace: `cmux new-workspace --name <name> --cwd <cwd>`
-- Add a surface to an existing workspace: `cmux new-surface --workspace <ref>` then `cmux rename-tab --surface <ref> <name>`
+- Create (visible split — when inside a workspace, `$CMUX_WORKSPACE_ID` set): `cmux new-split <left|right|up|down> --focus true` adds a visible split surface to the current workspace; read its ref back from `cmux tree --id-format uuids`.
+- Create a new workspace when none fits: `cmux new-workspace --name <name> --cwd <cwd> --focus true` (focus defaults true → it opens in front). Add a tab to an existing workspace instead with `cmux new-surface --workspace <ref> --focus true` then `cmux rename-tab --surface <ref> <name>`.
 - Prefer UUID refs for cmux targets (`--id-format uuids`); short refs like `surface:<n>` shift when surfaces close — re-resolve them at send time.
 
 ## Step 3: Inspect before injecting
