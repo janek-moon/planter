@@ -1,7 +1,7 @@
 {
   "name": "planter",
   "description": "Delegate tasks to named tmux/cmux sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back",
-  "version": "0.1.0",
+  "version": "0.2.0",
   "author": {
     "name": "Janek",
     "email": "eunho.moon@gmail.com"
