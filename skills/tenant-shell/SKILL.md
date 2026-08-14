@@ -1,6 +1,6 @@
 ---
 name: tenant-shell
-description: Use when a task delegated to a tmux/cmux session is a plain shell command, or the user asks for a plain shell instead of an AI agent in the target session
+description: Use when a task delegated to a tmux/cmux session, window, pane, or surface is a plain shell command — "npm test를 옆 패널에서 돌려줘", "run this command in another split" — or the user asks for a plain shell instead of an AI agent in the target session
 ---
 
 # Running a Shell Command in a Delegated Session

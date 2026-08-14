@@ -1,6 +1,6 @@
 ---
 name: tenant-codex
-description: Use when the user asks to run a delegated task with codex (OpenAI Codex CLI) in a tmux/cmux session
+description: Use when the user asks codex (OpenAI Codex CLI) to do, fix, build, or run a task — "ask codex to fix this", "hand this to codex", "codex에게 요청해줘/시켜줘/맡겨줘", "codex로 돌려줘" — with or without naming a tmux/cmux session, window, pane, or surface. Not for "codex review"/"codex challenge"/"consult codex" second-opinion requests without execution
 ---
 
 # Running codex in a Delegated Session

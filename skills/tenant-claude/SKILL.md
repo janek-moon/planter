@@ -1,6 +1,6 @@
 ---
 name: tenant-claude
-description: Use when a task delegated to a tmux/cmux session should run under the claude CLI — the default planter runner when the user names no other tool
+description: Use when a task delegated to a tmux/cmux session, window, pane, or surface should run under the claude CLI — "run this with claude in a new split", "새 창에서 claude로 시켜줘", "다른 claude에게 맡겨줘" — the default planter runner when the user names no other tool
 ---
 
 # Running claude in a Delegated Session

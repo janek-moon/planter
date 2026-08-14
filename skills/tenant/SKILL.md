@@ -1,6 +1,6 @@
 ---
 name: tenant
-description: Use when the user asks to delegate, hand off, or run a task in another terminal session, window, pane, surface, or workspace — e.g. "run this in the build session", "build 세션에서 돌려줘", "delegate this to a new session" — on tmux or cmux
+description: Use when the user asks to delegate, hand off, or run a task in another terminal session, window, pane, split, surface, or workspace on tmux or cmux — e.g. "run this in the build session", "delegate this to a new session", "build 세션에서 돌려줘", "다른 세션에서 실행해줘", "이 서피스/세션에 요청해줘", "옆 패널에서 돌려", "새 창에서 시켜줘", "세션에 위임해줘/맡겨줘/넘겨줘"
 ---
 
 # Delegating Work to a tmux/cmux Session
