@@ -38,7 +38,7 @@ Claude Code에게 이렇게 요청하면 됩니다:
 - "`npm run build`를 build 세션에 일반 셸 명령으로 위임해줘"
 - "이건 codex로 해줘"
 - "보내기만 하고 신경 쓰지 마 (fire and forget)"
-- "OF-3851 작업 시작해줘" — `feat/OF-3851-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
+- "ABC-123 작업 시작해줘" — `feat/ABC-123-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
 - "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 
 ## 동작 방식
