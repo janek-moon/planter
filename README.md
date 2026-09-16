@@ -27,7 +27,7 @@ reviewer panes waiting in the checkout.
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
-| `planter:issue-worktree` | herdr only: takes (or creates) a Jira/Linear issue, opens a worktree on a conventionally named branch, names the workspace after the issue, and lays out planner/worker/reviewer panes |
+| `planter:issue-worktree` | herdr only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes |
 
 ## Usage
 
@@ -40,6 +40,7 @@ Just ask Claude Code:
 - "Fire and forget — just send it"
 - "Start ABC-123" — opens a `feat/ABC-123-…` worktree in a herdr workspace named after the issue
 - "File an issue for this and open a worktree for it"
+- "Open a worktree for this, no issue needed"
 
 ## How it works
 
@@ -49,9 +50,9 @@ Just ask Claude Code:
 4. **Run** — the runner launches claude/codex or injects the sentinel-wrapped shell command.
 5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr, the agent state (`idle`/`working`/`blocked`) reported by herdr is used instead of screen polling. Fire-and-forget skips this on request.
 
-### Starting an issue (herdr only)
+### Starting work (herdr only)
 
-1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected. A key that does not resolve stops the run; with no key, the issue is read back to you before it gets filed.
+1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected, and a key that does not resolve stops the run. With no key you are asked which you want: file an issue (read back to you first) or work without one, leaving the tracker untouched.
 2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
 3. **Open** — one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated.
 4. **Lay out** — planner, worker, and reviewer panes, all in the checkout, left empty for `planter:tenant` to fill.
@@ -68,7 +69,7 @@ Just ask Claude Code:
 
 - tmux, cmux, and/or herdr
 - Claude Code with plugin support; `claude` / `codex` CLIs on PATH for those runners
-- For `planter:issue-worktree`: herdr, a git repo, and a Jira or Linear MCP connected
+- For `planter:issue-worktree`: herdr and a git repo — plus a Jira or Linear MCP when the work comes from an issue
 
 ## Manual verification checklist
 
