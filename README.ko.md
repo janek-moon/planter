@@ -23,7 +23,7 @@ Claude Code 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr*
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
-| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나 만들어서 worktree를 열고, workspace 이름을 이슈로 바꿈 |
+| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나 만들어서 worktree를 열고, workspace 이름을 이슈로 바꾸고, planner/worker/reviewer pane을 배치 |
 
 ## 사용법
 

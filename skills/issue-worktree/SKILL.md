@@ -41,15 +41,33 @@ Base: `git symbolic-ref --short refs/remotes/origin/HEAD` — it already resolve
 herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<label>" --no-focus
 ```
 
-- Read `.result.workspace.workspace_id` and `.result.workspace.worktree.checkout_path` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<branch-slug>`.
+- Read `.result.workspace.workspace_id`, `.result.workspace.worktree.checkout_path`, and `.result.root_pane.pane_id` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<branch-slug>`.
 - `--label` becomes the workspace name — no separate rename call.
 - `--no-focus` leaves the user where they are. Pass `--focus` only when they asked to jump there.
 - Any error other than the one below: STOP and report the JSON error as-is. Do not retry with a different branch name.
 - Error `worktree_create_failed` with `already exists`: the worktree is already on disk. Reuse it — `herdr worktree open --cwd "$PWD" --branch <branch> --label "<label>" --no-focus` returns `already_open: true` and renames the workspace to the new label.
 
-## Step 4: Report
+## Step 4: Lay out the three panes
 
-Workspace id and label, checkout path, branch, issue URL. Do not start an agent — hand the workspace to planter:tenant if the user wants work running in it.
+Every issue workspace gets the same three: `planner` top left, `worker` below it, `reviewer` down the right side. The root pane becomes the planner, so only two splits are needed (`--ratio` defaults to 0.5, which is the shape these workspaces already have):
+
+```
+herdr pane rename <root_pane_id> planner
+herdr pane split --pane <root_pane_id> --direction right --cwd "<checkout_path>" --no-focus
+herdr pane rename <pane_id from that response> reviewer
+herdr pane split --pane <root_pane_id> --direction down --cwd "<checkout_path>" --no-focus
+herdr pane rename <pane_id from that response> worker
+```
+
+Each split returns the new pane at `.result.pane.pane_id` — rename that one, not the root. `--cwd` matters because only the root pane inherits the checkout path; without it the splits open wherever the caller was.
+
+Reuse path (`already_open: true`): list what is there with `herdr pane list --workspace <workspace_id>` before touching anything. Label only what is missing, and run only the splits needed to get back to three — never a second set. If three panes exist but carry no labels, `herdr pane layout --pane <root_pane_id>` gives their positions: top left is the planner, below it the worker, the full-height one on the right the reviewer.
+
+Leave the panes as empty shells. The names say what each is for; planter:tenant starts an agent in one when the user asks (`herdr agent start <name> --kind claude|codex --pane <pane_id>`).
+
+## Step 5: Report
+
+Workspace id and label, checkout path, branch, issue URL, and the three pane names. Do not start an agent — hand the workspace to planter:tenant if the user wants work running in it.
 
 ## Common Mistakes
 

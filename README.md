@@ -23,7 +23,7 @@ plain shell in it, monitor the screen, and report the result back.
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
-| `planter:issue-worktree` | herdr only: takes (or creates) a Jira/Linear issue, opens a worktree on a conventionally named branch, and names the workspace after the issue |
+| `planter:issue-worktree` | herdr only: takes (or creates) a Jira/Linear issue, opens a worktree on a conventionally named branch, names the workspace after the issue, and lays out planner/worker/reviewer panes |
 
 ## Usage
 
@@ -66,6 +66,7 @@ Just ask Claude Code:
 - [x] shell runner: sentinel DONE and FAIL paths
 - [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
 - [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
+- [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
 
