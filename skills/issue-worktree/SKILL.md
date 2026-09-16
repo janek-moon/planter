@@ -30,7 +30,7 @@ Keep from the issue: key, title, type, URL. Working without one, keep just that 
 Branch — `<type>/<KEY>-<slug>`, same shape for both trackers. Without an issue the key drops out and the slug carries the whole name (`feat/parallel-upload-retry`). The key-casing rule below then has nothing to derive from; the rest still applies:
 - Type is the kind of work, not just the issue type: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`. An issue typed as a bug means `fix`; otherwise read the title — or, with no issue, the sentence from Step 1 — and ask when it does not clearly map to one of these.
 - Key keeps its uppercase form (`feat/ABC-123`, `feat/XYZ-456`).
-- Slug is a short English phrase for what the work is, about three or four words (`fix/ABC-123-i18n-selector-drift`). A Korean title is not transliterated — either write the English phrase yourself or leave the slug off entirely.
+- Slug is a short English phrase for what the work is, about three or four words (`fix/ABC-123-i18n-selector-drift`). A Korean title is not transliterated — write the English phrase yourself. Dropping the slug is only an option when a key carries the name (`feat/ABC-123`); without an issue the slug is the whole name, and `feat/` is not a valid branch name. If the work will not condense into an English phrase, ask the user for one rather than shipping a transliteration.
 - Linear issues carry a `gitBranchName` (`<username>/abc-123-<title>`). Do not adopt that format on your own — but a repo may genuinely be full of such branches, because they were made from Linear. That is a repo convention to weigh in the check below, not a reason to build the name that way yourself.
 - Confirm against the repo before committing to a name: `git branch -a --format='%(committerdate:short) %(refname:short)' --sort=-committerdate | head -20`. Match the shape you see — prefix style, key casing, whether a slug is used at all.
 - Repos are often mixed (one repo here carries both `feat/ABC-123` and a Linear-generated `<username>/abc-124-...` in the same month). When the recent branches disagree on shape, say what you found and ask which to use. Only the no-transliteration rule stands regardless: an existing branch with a Korean slug is not a reason to write another one.
@@ -77,6 +77,7 @@ Workspace id and label, checkout path, branch, the issue URL when there is one, 
 
 - Creating an issue because a given key did not resolve — report the miss instead.
 - Reaching for Linear's `gitBranchName` because it is there — build the name from the repo's convention instead.
-- Transliterating a Korean title or sentence into the slug — leave the slug off instead.
+- Transliterating a Korean title or sentence into the slug — write a short English phrase instead.
+- Dropping the slug when there is no key: `feat/` alone is a name git refuses.
 - Removing a worktree to retry: `herdr worktree remove` deletes the checkout but leaves the branch behind, so the retry collides with the same branch name.
 - Opening the worktree with `--focus` and yanking the user out of what they were doing.
