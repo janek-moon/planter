@@ -8,6 +8,10 @@ Delegate tasks from a Claude Code session to named **tmux**, **cmux**, or
 **herdr** sessions — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
 
+On herdr it also starts work: hand it a Jira or Linear issue and it opens a
+worktree in a new workspace named after the issue, with planner, worker, and
+reviewer panes waiting in the checkout.
+
 ## Install
 
 ```
@@ -45,17 +49,26 @@ Just ask Claude Code:
 4. **Run** — the runner launches claude/codex or injects the sentinel-wrapped shell command.
 5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr, the agent state (`idle`/`working`/`blocked`) reported by herdr is used instead of screen polling. Fire-and-forget skips this on request.
 
+### Starting an issue (herdr only)
+
+1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected. A key that does not resolve stops the run; with no key, the issue is read back to you before it gets filed.
+2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
+3. **Open** — one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated.
+4. **Lay out** — planner, worker, and reviewer panes, all in the checkout, left empty for `planter:tenant` to fill.
+
 ## Safety rules
 
 - Never boots a tmux/cmux/herdr server on its own.
 - Only drives herdr from inside a herdr pane.
 - Never types over a pane occupied by another program.
 - Never answers trust/permission/login dialogs in the delegated session without explicit user authorization.
+- Never files a tracker issue without reading it back first, and never files one to cover an issue key that failed to resolve.
 
 ## Requirements
 
 - tmux, cmux, and/or herdr
 - Claude Code with plugin support; `claude` / `codex` CLIs on PATH for those runners
+- For `planter:issue-worktree`: herdr, a git repo, and a Jira or Linear MCP connected
 
 ## Manual verification checklist
 
