@@ -1,6 +1,6 @@
 ---
 name: tenant-shell
-description: Use when a task delegated to a tmux/cmux session, window, pane, or surface is a plain shell command — "npm test를 옆 패널에서 돌려줘", "run this command in another split" — or the user asks for a plain shell instead of an AI agent in the target session
+description: Use when a task delegated to a tmux/cmux/herdr session, window, pane, or surface is a plain shell command — "npm test를 옆 패널에서 돌려줘", "run this command in another split" — or the user asks for a plain shell instead of an AI agent in the target session
 ---
 
 # Running a Shell Command in a Delegated Session
@@ -13,7 +13,7 @@ Inject a shell command into the target session with a sentinel suffix so complet
 
 ## Step 1: Verify a shell prompt
 
-Capture the target (`tmux capture-pane -p -t <target>` / `cmux read-screen --workspace <ref> --surface <ref>`). The last line must be a shell prompt. If another program is running, STOP and report.
+Capture the target (`tmux capture-pane -p -t <target>` / `cmux read-screen --workspace <ref> --surface <ref>` / `herdr pane read <pane_id> --source recent-unwrapped --lines 20`). The last line must be a shell prompt. If another program is running, STOP and report.
 
 ## Step 2: Inject with a sentinel
 
@@ -27,6 +27,7 @@ Send it literally, then Enter as a separate event:
 
 - tmux: `tmux send-keys -t <target> -l '<wrapped command>'` then `tmux send-keys -t <target> Enter`
 - cmux: `cmux send --surface <ref> '<wrapped command>'` then `cmux send-key --surface <ref> enter`
+- herdr: `herdr pane run <pane_id> '<wrapped command>'` — sends text and Enter atomically, so no separate Enter
 
 The payload for `cmux send` must stay single-line with no `\n`/`\r`/`\t` two-character escape sequences — cmux interprets those as Enter/Tab keys and would submit mid-string.
 
@@ -43,6 +44,12 @@ tmux capture-pane -p -J -S -200 -t <target> | grep -E '^PLANTER_(DONE|FAIL)_<id>
 ```
 cmux read-screen --workspace <ref> --surface <ref> --scrollback | grep -E '^PLANTER_(DONE|FAIL)_<id>$'
 ```
+
+```
+herdr pane wait-output <pane_id> --regex '(?m)^PLANTER_(DONE|FAIL)_<id>$' --source recent-unwrapped --timeout 600000
+```
+
+herdr blocks until the match instead of polling; `.result.matched_line` says DONE or FAIL and `.result.read.text` carries the output. On `timeout`, report interim status and wait again.
 
 **Anchor the match to the whole line.** The typed command itself also contains the sentinel text; only the echoed result appears alone on its own line. `-J` joins wrapped lines, so a wrapped fragment of the long typed command cannot start a physical line and false-match.
 

@@ -4,9 +4,13 @@
 
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
-Claude Code 세션의 작업을 이름이 지정된 **tmux** 또는 **cmux** 세션에 위임합니다 —
+Claude Code 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr** 세션에 위임합니다 —
 세션을 찾거나 새로 만들고, 그 안에서 `claude`(기본), `codex`, 또는 일반 셸을
 실행한 뒤, 화면을 모니터링하고 결과를 다시 보고합니다.
+
+herdr에서는 작업을 시작하는 것도 합니다. Jira나 Linear 이슈를 주면 worktree를 열고,
+workspace 이름을 이슈로 붙이고, planner·worker·reviewer pane을 worktree 안에
+만들어 둡니다.
 
 ## 설치
 
@@ -19,10 +23,11 @@ Claude Code 세션의 작업을 이름이 지정된 **tmux** 또는 **cmux** 세
 
 | 스킬 | 역할 |
 |---|---|
-| `planter:tenant` | 진입점: tmux/cmux를 감지하고, 지정된 이름의 세션을 찾거나 만들어 적절한 러너로 연결 |
+| `planter:tenant` | 진입점: tmux/cmux/herdr를 감지하고, 지정된 이름의 세션을 찾거나 만들어 적절한 러너로 연결 |
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
+| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나 만들어서 worktree를 열고, workspace 이름을 이슈로 바꾸고, planner/worker/reviewer pane을 배치 |
 
 ## 사용법
 
@@ -33,25 +38,37 @@ Claude Code에게 이렇게 요청하면 됩니다:
 - "`npm run build`를 build 세션에 일반 셸 명령으로 위임해줘"
 - "이건 codex로 해줘"
 - "보내기만 하고 신경 쓰지 마 (fire and forget)"
+- "OF-3851 작업 시작해줘" — `feat/OF-3851-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
+- "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 
 ## 동작 방식
 
-1. **감지(Detect)** — `$TMUX` / `$CMUX_WORKSPACE_ID` / 실행 중인 서버 탐지로 백엔드를 고릅니다. 아무것도 가정하지 않습니다.
+1. **감지(Detect)** — `$TMUX` / `$CMUX_WORKSPACE_ID` / `$HERDR_ENV` / 실행 중인 서버 탐지로 백엔드를 고릅니다. 아무것도 가정하지 않습니다.
 2. **해석(Resolve)** — 지정한 이름의 세션/워크스페이스가 있으면 재사용하고, 없으면 만들어서 이름을 붙입니다.
 3. **확인(Inspect)** — 키 입력을 보내기 전에 대상 화면을 먼저 캡처합니다. 사용 중인 창(pane)은 절대 덮어쓰지 않습니다.
 4. **실행(Run)** — 러너가 claude/codex를 띄우거나, 센티넬로 감싼 셸 명령을 주입합니다.
-5. **모니터링(Monitor)** — 완료 신호가 뜨고 출력이 안정될 때까지 화면을 폴링한 뒤 결과를 요약합니다. fire-and-forget이면 이 단계를 건너뜁니다.
+5. **모니터링(Monitor)** — 완료 신호가 뜨고 출력이 안정될 때까지 화면을 폴링한 뒤 결과를 요약합니다. herdr에서는 화면 폴링 대신 herdr가 알려주는 에이전트 상태(`idle`/`working`/`blocked`)를 씁니다. fire-and-forget이면 이 단계를 건너뜁니다.
+
+### 이슈로 작업 시작하기 (herdr 전용)
+
+1. **이슈 확인** — 연결된 트래커 MCP에서 키를 찾습니다. 못 찾으면 거기서 멈추고, 키 없이 만들 때는 무엇을 만들지 먼저 읽어 드린 뒤에 만듭니다.
+2. **이름 정하기** — 브랜치는 그 저장소의 최근 브랜치 모양을 따르고, 기준 브랜치는 `origin/HEAD`에서 가져옵니다(`main`으로 단정하지 않습니다).
+3. **열기** — `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용합니다.
+4. **pane 배치** — planner·worker·reviewer를 worktree 안에 만들고, 비워 둡니다. 여기에 무엇을 띄울지는 `planter:tenant`가 합니다.
 
 ## 안전 규칙
 
-- tmux/cmux 서버를 스스로 부팅하지 않습니다.
+- tmux/cmux/herdr 서버를 스스로 부팅하지 않습니다.
+- herdr는 herdr pane 안에서 실행될 때만 조작합니다.
 - 다른 프로그램이 점유 중인 창 위에 타이핑하지 않습니다.
 - 사용자의 명시적 허가 없이는 위임된 세션의 신뢰/권한/로그인 대화상자에 응답하지 않습니다.
+- 이슈를 만들 때는 내용을 먼저 확인받고, 조회에 실패한 키를 새 이슈로 대신하지 않습니다.
 
 ## 요구 사항
 
-- tmux 그리고/또는 cmux
+- tmux, cmux, herdr 중 하나 이상
 - 플러그인을 지원하는 Claude Code, 해당 러너를 쓰려면 PATH에 `claude` / `codex` CLI
+- `planter:issue-worktree`를 쓰려면 herdr, git 저장소, 그리고 연결된 Jira 또는 Linear MCP
 
 ## 기여하기
 

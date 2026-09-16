@@ -4,9 +4,13 @@
 
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
-Delegate tasks from a Claude Code session to named **tmux** or **cmux**
-sessions — find or create the session, run `claude` (default), `codex`, or a
+Delegate tasks from a Claude Code session to named **tmux**, **cmux**, or
+**herdr** sessions — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
+
+On herdr it also starts work: hand it a Jira or Linear issue and it opens a
+worktree in a new workspace named after the issue, with planner, worker, and
+reviewer panes waiting in the checkout.
 
 ## Install
 
@@ -19,10 +23,11 @@ plain shell in it, monitor the screen, and report the result back.
 
 | Skill | Purpose |
 |---|---|
-| `planter:tenant` | Entry point: detects tmux/cmux, finds or creates the named session, routes to a runner |
+| `planter:tenant` | Entry point: detects tmux/cmux/herdr, finds or creates the named session, routes to a runner |
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
+| `planter:issue-worktree` | herdr only: takes (or creates) a Jira/Linear issue, opens a worktree on a conventionally named branch, names the workspace after the issue, and lays out planner/worker/reviewer panes |
 
 ## Usage
 
@@ -33,25 +38,37 @@ Just ask Claude Code:
 - "Delegate `npm run build` to the build session as a plain shell command"
 - "Use codex for this one"
 - "Fire and forget — just send it"
+- "Start OF-3851" — opens a `feat/OF-3851-…` worktree in a herdr workspace named after the issue
+- "File an issue for this and open a worktree for it"
 
 ## How it works
 
-1. **Detect** — `$TMUX` / `$CMUX_WORKSPACE_ID` / live-server probes pick the backend; nothing is assumed.
+1. **Detect** — `$TMUX` / `$CMUX_WORKSPACE_ID` / `$HERDR_ENV` / live-server probes pick the backend; nothing is assumed.
 2. **Resolve** — the named session/workspace is reused if it exists, created and named if not.
 3. **Inspect** — the target screen is captured before any keystroke is sent; occupied panes are never overwritten.
 4. **Run** — the runner launches claude/codex or injects the sentinel-wrapped shell command.
-5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. Fire-and-forget skips this on request.
+5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr, the agent state (`idle`/`working`/`blocked`) reported by herdr is used instead of screen polling. Fire-and-forget skips this on request.
+
+### Starting an issue (herdr only)
+
+1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected. A key that does not resolve stops the run; with no key, the issue is read back to you before it gets filed.
+2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
+3. **Open** — one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated.
+4. **Lay out** — planner, worker, and reviewer panes, all in the checkout, left empty for `planter:tenant` to fill.
 
 ## Safety rules
 
-- Never boots a tmux/cmux server on its own.
+- Never boots a tmux/cmux/herdr server on its own.
+- Only drives herdr from inside a herdr pane.
 - Never types over a pane occupied by another program.
 - Never answers trust/permission/login dialogs in the delegated session without explicit user authorization.
+- Never files a tracker issue without reading it back first, and never files one to cover an issue key that failed to resolve.
 
 ## Requirements
 
-- tmux and/or cmux
+- tmux, cmux, and/or herdr
 - Claude Code with plugin support; `claude` / `codex` CLIs on PATH for those runners
+- For `planter:issue-worktree`: herdr, a git repo, and a Jira or Linear MCP connected
 
 ## Manual verification checklist
 
@@ -60,6 +77,10 @@ Just ask Claude Code:
 - [ ] cmux: delegate to a new named workspace
 - [x] codex runner end-to-end (verified to the approval/usage-limit checkpoint)
 - [x] shell runner: sentinel DONE and FAIL paths
+- [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
+- [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
+- [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
+- [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
 
 ## License
