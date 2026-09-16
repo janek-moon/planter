@@ -23,6 +23,7 @@ Claude Code 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr*
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
+| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나 만들어서 worktree를 열고, workspace 이름을 이슈로 바꿈 |
 
 ## 사용법
 
@@ -33,6 +34,8 @@ Claude Code에게 이렇게 요청하면 됩니다:
 - "`npm run build`를 build 세션에 일반 셸 명령으로 위임해줘"
 - "이건 codex로 해줘"
 - "보내기만 하고 신경 쓰지 마 (fire and forget)"
+- "OF-3851 작업 시작해줘" — `feat/OF-3851-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
+- "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 
 ## 동작 방식
 

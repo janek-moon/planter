@@ -23,6 +23,7 @@ plain shell in it, monitor the screen, and report the result back.
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
+| `planter:issue-worktree` | herdr only: takes (or creates) a Jira/Linear issue, opens a worktree on a conventionally named branch, and names the workspace after the issue |
 
 ## Usage
 
@@ -33,6 +34,8 @@ Just ask Claude Code:
 - "Delegate `npm run build` to the build session as a plain shell command"
 - "Use codex for this one"
 - "Fire and forget — just send it"
+- "Start OF-3851" — opens a `feat/OF-3851-…` worktree in a herdr workspace named after the issue
+- "File an issue for this and open a worktree for it"
 
 ## How it works
 
@@ -62,6 +65,8 @@ Just ask Claude Code:
 - [x] codex runner end-to-end (verified to the approval/usage-limit checkpoint)
 - [x] shell runner: sentinel DONE and FAIL paths
 - [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
+- [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
+- [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
 
 ## License

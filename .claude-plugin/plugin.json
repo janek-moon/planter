@@ -1,7 +1,7 @@
 {
   "name": "planter",
-  "description": "Delegate tasks to named tmux/cmux/herdr sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back",
-  "version": "0.3.0",
+  "description": "Delegate tasks to named tmux/cmux/herdr sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back; on herdr, also open an issue worktree in its own workspace",
+  "version": "0.4.0",
   "author": {
     "name": "Janek",
     "email": "eunho.moon@gmail.com"
@@ -9,5 +9,5 @@
   "homepage": "https://github.com/janek-moon/planter",
   "repository": "https://github.com/janek-moon/planter",
   "license": "MIT",
-  "keywords": ["tmux", "cmux", "herdr", "delegation", "session", "claude", "codex", "shell"]
+  "keywords": ["tmux", "cmux", "herdr", "worktree", "jira", "linear", "delegation", "session", "claude", "codex", "shell"]
 }
