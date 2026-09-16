@@ -38,7 +38,7 @@ Just ask Claude Code:
 - "Delegate `npm run build` to the build session as a plain shell command"
 - "Use codex for this one"
 - "Fire and forget — just send it"
-- "Start OF-3851" — opens a `feat/OF-3851-…` worktree in a herdr workspace named after the issue
+- "Start ABC-123" — opens a `feat/ABC-123-…` worktree in a herdr workspace named after the issue
 - "File an issue for this and open a worktree for it"
 
 ## How it works

@@ -1,6 +1,6 @@
 ---
 name: issue-worktree
-description: Use when work starts from an issue and needs its own place to live — "OF-3851 작업 시작해줘", "이 이슈로 worktree 열어줘", "이슈 만들고 브랜치 파줘", "start work on LIN-123", "open a worktree for this ticket" — takes a Jira/Linear issue key (or creates the issue), opens a git worktree in a new herdr workspace, and names the workspace after the issue
+description: Use when work starts from an issue and needs its own place to live — "ABC-123 작업 시작해줘", "이 이슈로 worktree 열어줘", "이슈 만들고 브랜치 파줘", "start work on ABC-123", "open a worktree for this ticket" — takes a Jira/Linear issue key (or creates the issue), opens a git worktree in a new herdr workspace, and names the workspace after the issue
 ---
 
 # Starting an Issue in Its Own herdr Workspace
@@ -15,7 +15,7 @@ Requires `$HERDR_ENV` = `1`. Worktree workspaces are a herdr feature; there is n
 
 ## Step 1: Resolve the issue
 
-**Key given** (`OF-3851`, `LIN-123`, `SVC-381`): look it up through whichever tracker MCP is connected — Linear and/or Jira. Both connected: query both, the one that returns the issue wins; if both return one, ask which. Nothing connected, or the key is not found: STOP and report. Never invent a title, and never create a new issue to cover a key that did not resolve.
+**Key given** (`ABC-123`, `XYZ-456`): look it up through whichever tracker MCP is connected — Linear and/or Jira. Both connected: query both, the one that returns the issue wins; if both return one, ask which. Nothing connected, or the key is not found: STOP and report. Never invent a title, and never create a new issue to cover a key that did not resolve.
 
 **No key**: ask for the title and the destination (Linear team / Jira project), then read back what you are about to file — type, title, destination, assignee (yourself) — and create it only after the user confirms. Continue with the key it returns.
 
@@ -25,11 +25,11 @@ Keep from the issue: key, title, type, URL.
 
 Branch — `<type>/<KEY>-<slug>`, same shape for both trackers:
 - Type is the kind of work, not just the issue type: `feat`, `fix`, `refactor`, `docs`, `test`, `chore`. A bug type means `fix`; otherwise read the title, and ask when it does not clearly map to one of these.
-- Key keeps its uppercase form (`feat/SVC-446`, `feat/OF-3805`).
-- Slug is a short English phrase for what the work is, about three or four words (`fix/OF-3632-i18n-selector-drift`). A Korean title is not transliterated — either write the English phrase yourself or leave the slug off entirely.
-- Linear issues carry a `gitBranchName` (`eunhomoon/svc-381-...`). Do not adopt that format on your own — but a repo may genuinely be full of such branches, because they were made from Linear. That is a repo convention to weigh in the check below, not a reason to build the name that way yourself.
+- Key keeps its uppercase form (`feat/ABC-123`, `feat/XYZ-456`).
+- Slug is a short English phrase for what the work is, about three or four words (`fix/ABC-123-i18n-selector-drift`). A Korean title is not transliterated — either write the English phrase yourself or leave the slug off entirely.
+- Linear issues carry a `gitBranchName` (`<username>/abc-123-<title>`). Do not adopt that format on your own — but a repo may genuinely be full of such branches, because they were made from Linear. That is a repo convention to weigh in the check below, not a reason to build the name that way yourself.
 - Confirm against the repo before committing to a name: `git branch -a --format='%(committerdate:short) %(refname:short)' --sort=-committerdate | head -20`. Match the shape you see — prefix style, key casing, whether a slug is used at all.
-- Repos are often mixed (one repo here carries both `feat/SVC-446` and `eunhomoon/svc-381-...` in the same month). When the recent branches disagree on shape, say what you found and ask which to use. Only the no-transliteration rule stands regardless: an existing branch with a Korean slug is not a reason to write another one.
+- Repos are often mixed (one repo here carries both `feat/ABC-123` and a Linear-generated `<username>/abc-124-...` in the same month). When the recent branches disagree on shape, say what you found and ask which to use. Only the no-transliteration rule stands regardless: an existing branch with a Korean slug is not a reason to write another one.
 
 Workspace label: `<KEY> <title>`, matching how issue workspaces already read in the sidebar. Use the title alone if the user asks for that.
 
