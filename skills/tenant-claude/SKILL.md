@@ -1,6 +1,6 @@
 ---
 name: tenant-claude
-description: Use when a task delegated to a tmux/cmux session, window, pane, or surface should run under the claude CLI — "run this with claude in a new split", "새 창에서 claude로 시켜줘", "다른 claude에게 맡겨줘" — the default planter runner when the user names no other tool
+description: Use when a task delegated to a tmux/cmux/herdr session, window, pane, or surface should run under the claude CLI — "run this with claude in a new split", "새 창에서 claude로 시켜줘", "다른 claude에게 맡겨줘" — the default planter runner when the user names no other tool
 ---
 
 # Running claude in a Delegated Session
@@ -41,6 +41,18 @@ Re-capture to confirm the text sits in the input box BEFORE sending Enter.
 Working: spinner / "esc to interrupt" visible. Done: working indicators gone, input box idle — confirm with two identical captures per the monitoring contract. An idle input box is not proof of completion on its own — claude may be asking a follow-up question, which also yields identical captures. Read the captured content: if it ends in a question or a request for input, report that to the user instead of declaring the task done. Report the final response from scrollback (`tmux capture-pane -p -J -S -200 -t <target>`).
 
 If the screen shows a permission request from the delegated claude, report it to the user instead of pressing keys on it.
+
+## herdr
+
+herdr recognizes the agent and reports its state, so Steps 1–3 collapse into agent commands — no startup polling, no capture comparison.
+
+1. **Launch or reuse.** If `herdr pane get <pane_id>` shows `.agent` = `claude`, reuse it (target: its `.name` from `herdr agent list`, or the pane id). Otherwise the pane must be at a shell prompt:
+   `herdr agent start <name> --kind claude --pane <pane_id>` — name matches `[a-z][a-z0-9_-]{0,31}`; user flags go after `--`. It returns once claude is ready for input. On `timeout`, read the pane (`herdr pane read <pane_id> --source recent-unwrapped --lines 50`) — usually a trust/permission dialog — and report it; do not answer it.
+2. **Inject and wait.** `herdr agent prompt <name> '<prompt>' --wait --timeout 600000`. Multi-line prompts go in as-is — herdr submits via bracketed paste, so no buffer workaround.
+3. **Branch on `.result.agent.agent_status`:**
+   - `blocked` — a permission request or question dialog. Read it and report; do not send keys.
+   - `idle` / `done` — read the result: `herdr agent read <name> --source recent-unwrapped --lines 200`. A follow-up question also settles as `idle`; if the response ends in a question, report it instead of declaring done.
+   - error `agent_prompt_stalled` (no state change within 5 s) or `timeout` — read the pane and report interim status.
 
 ## Common Mistakes
 
