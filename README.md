@@ -4,8 +4,8 @@
 
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
-Delegate tasks from a Claude Code session to named **tmux** or **cmux**
-sessions — find or create the session, run `claude` (default), `codex`, or a
+Delegate tasks from a Claude Code session to named **tmux**, **cmux**, or
+**herdr** sessions — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
 
 ## Install
@@ -19,7 +19,7 @@ plain shell in it, monitor the screen, and report the result back.
 
 | Skill | Purpose |
 |---|---|
-| `planter:tenant` | Entry point: detects tmux/cmux, finds or creates the named session, routes to a runner |
+| `planter:tenant` | Entry point: detects tmux/cmux/herdr, finds or creates the named session, routes to a runner |
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
@@ -36,21 +36,22 @@ Just ask Claude Code:
 
 ## How it works
 
-1. **Detect** — `$TMUX` / `$CMUX_WORKSPACE_ID` / live-server probes pick the backend; nothing is assumed.
+1. **Detect** — `$TMUX` / `$CMUX_WORKSPACE_ID` / `$HERDR_ENV` / live-server probes pick the backend; nothing is assumed.
 2. **Resolve** — the named session/workspace is reused if it exists, created and named if not.
 3. **Inspect** — the target screen is captured before any keystroke is sent; occupied panes are never overwritten.
 4. **Run** — the runner launches claude/codex or injects the sentinel-wrapped shell command.
-5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. Fire-and-forget skips this on request.
+5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr, the agent state (`idle`/`working`/`blocked`) reported by herdr is used instead of screen polling. Fire-and-forget skips this on request.
 
 ## Safety rules
 
-- Never boots a tmux/cmux server on its own.
+- Never boots a tmux/cmux/herdr server on its own.
+- Only drives herdr from inside a herdr pane.
 - Never types over a pane occupied by another program.
 - Never answers trust/permission/login dialogs in the delegated session without explicit user authorization.
 
 ## Requirements
 
-- tmux and/or cmux
+- tmux, cmux, and/or herdr
 - Claude Code with plugin support; `claude` / `codex` CLIs on PATH for those runners
 
 ## Manual verification checklist
@@ -60,6 +61,7 @@ Just ask Claude Code:
 - [ ] cmux: delegate to a new named workspace
 - [x] codex runner end-to-end (verified to the approval/usage-limit checkpoint)
 - [x] shell runner: sentinel DONE and FAIL paths
+- [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
 
 ## License
