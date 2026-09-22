@@ -4,7 +4,7 @@
 
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
-Delegate tasks from a Claude Code session to named **tmux**, **cmux**, or
+Delegate tasks from a Claude Code or Codex session to named **tmux**, **cmux**, or
 **herdr** sessions — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
 
@@ -14,10 +14,21 @@ reviewer panes waiting in the checkout.
 
 ## Install
 
+Claude Code:
+
 ```
 /plugin marketplace add janek-moon/planter
 /plugin install planter@planter
 ```
+
+Codex:
+
+```
+codex plugin marketplace add janek-moon/planter
+codex plugin add planter@planter
+```
+
+The same skills load in both; start a new session after installing.
 
 ## Skills
 
@@ -31,7 +42,7 @@ reviewer panes waiting in the checkout.
 
 ## Usage
 
-Just ask Claude Code:
+Just ask Claude Code or Codex:
 
 - "Run the tests in the **build** session" / "build 세션에서 테스트 돌려줘"
 - "Create a session called **deploy** and have claude fix the lint errors there"
@@ -68,11 +79,13 @@ Just ask Claude Code:
 ## Requirements
 
 - tmux, cmux, and/or herdr
-- Claude Code with plugin support; `claude` / `codex` CLIs on PATH for those runners
+- Claude Code or Codex with plugin support; `claude` / `codex` CLIs on PATH for those runners
+- The issue-or-not choice in `planter:issue-worktree` is a click-to-answer dialog (AskUserQuestion in Claude Code, `request_user_input` in Codex). Codex shows it in Plan mode, or in Default mode once the `default_mode_request_user_input` feature is enabled; otherwise it asks in plain text
 - For `planter:issue-worktree`: herdr and a git repo — plus a Jira or Linear MCP when the work comes from an issue
 
 ## Manual verification checklist
 
+- [x] Codex: `codex plugin add planter@planter` installs from the marketplace and all five skills appear in the model prompt
 - [x] tmux: delegate to a NEW named session (claude runner, monitored)
 - [x] tmux: delegate to an EXISTING session (reused, not recreated)
 - [ ] cmux: delegate to a new named workspace

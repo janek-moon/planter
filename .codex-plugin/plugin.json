@@ -1,0 +1,30 @@
+{
+  "name": "planter",
+  "description": "Delegate tasks to named tmux/cmux/herdr sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back; on herdr, also open an issue worktree in its own workspace",
+  "version": "0.6.0",
+  "author": {
+    "name": "Janek",
+    "email": "eunho.moon@gmail.com"
+  },
+  "homepage": "https://github.com/janek-moon/planter",
+  "repository": "https://github.com/janek-moon/planter",
+  "license": "MIT",
+  "keywords": ["tmux", "cmux", "herdr", "worktree", "jira", "linear", "delegation", "session", "claude", "codex", "shell"],
+  "skills": "./skills/",
+  "interface": {
+    "displayName": "planter",
+    "shortDescription": "Delegate tasks to tmux/cmux/herdr sessions",
+    "longDescription": "Delegate tasks from a Claude Code or Codex session to named tmux, cmux, or herdr sessions: find or create the session, run claude, codex, or a plain shell in it, monitor the screen, and report the result back. On herdr it also starts work: hand it a Jira or Linear issue and it opens a worktree in a new workspace named after the issue, with planner, worker, and reviewer panes waiting in the checkout.",
+    "developerName": "Janek",
+    "category": "Productivity",
+    "capabilities": [
+      "Instructions"
+    ],
+    "websiteURL": "https://github.com/janek-moon/planter",
+    "defaultPrompt": [
+      "Run the tests in the build session",
+      "Create a session called deploy and have claude fix the lint errors there",
+      "Start ABC-123 and open a worktree for it"
+    ]
+  }
+}

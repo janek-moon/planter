@@ -17,7 +17,7 @@ Requires `$HERDR_ENV` = `1`. Worktree workspaces are a herdr feature; there is n
 
 **Key given** (`ABC-123`, `XYZ-456`): look it up through whichever tracker MCP is connected — Linear and/or Jira. Both connected: query both, the one that returns the issue wins; if both return one, ask which. Nothing connected, or the key is not found: STOP and report. Never invent a title, and never create a new issue to cover a key that did not resolve.
 
-**No key**: ask which of the two the user wants with AskUserQuestion. Ask even when the user already said which — this is the last point before a tracker gets touched, and answering is one click. Offer "File an issue" only when a tracker MCP is actually connected; when none is, say so and continue without an issue.
+**No key**: ask which of the two the user wants as a choice dialog — AskUserQuestion in Claude Code, `request_user_input` in Codex — whenever that tool is available this turn, otherwise in plain prose. Ask even when the user already said which — this is the last point before a tracker gets touched, and answering is one click or one word. Offer "File an issue" only when a tracker MCP is actually connected; when none is, say so and continue without an issue.
 
 The two options:
 - **File an issue** — ask for the title and the destination (Linear team / Jira project), read back what you are about to file (type, title, destination, assignee: yourself), and create it only after the user confirms. Continue with the key it returns.
