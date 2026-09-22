@@ -4,7 +4,7 @@
 
 <img width="1536" height="1024" alt="Image" src="https://github.com/user-attachments/assets/b71fc93e-2d49-4869-ac97-e5e1fe1e8769" />
 
-Claude Code 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr** 세션에 위임합니다 —
+Claude Code나 Codex 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr** 세션에 위임합니다 —
 세션을 찾거나 새로 만들고, 그 안에서 `claude`(기본), `codex`, 또는 일반 셸을
 실행한 뒤, 화면을 모니터링하고 결과를 다시 보고합니다.
 
@@ -14,10 +14,21 @@ workspace 이름을 이슈로 붙이고, planner·worker·reviewer pane을 workt
 
 ## 설치
 
+Claude Code:
+
 ```
 /plugin marketplace add janek-moon/planter
 /plugin install planter@planter
 ```
+
+Codex:
+
+```
+codex plugin marketplace add janek-moon/planter
+codex plugin add planter@planter
+```
+
+두 쪽 모두 같은 스킬이 올라옵니다. 설치 후에는 새 세션을 시작하세요.
 
 ## 스킬
 
@@ -31,7 +42,7 @@ workspace 이름을 이슈로 붙이고, planner·worker·reviewer pane을 workt
 
 ## 사용법
 
-Claude Code에게 이렇게 요청하면 됩니다:
+Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 
 - "**build** 세션에서 테스트 돌려줘"
 - "**deploy**라는 세션을 만들고 거기서 claude로 lint 에러 고쳐줘"
@@ -68,7 +79,8 @@ Claude Code에게 이렇게 요청하면 됩니다:
 ## 요구 사항
 
 - tmux, cmux, herdr 중 하나 이상
-- 플러그인을 지원하는 Claude Code, 해당 러너를 쓰려면 PATH에 `claude` / `codex` CLI
+- 플러그인을 지원하는 Claude Code 또는 Codex, 해당 러너를 쓰려면 PATH에 `claude` / `codex` CLI
+- `planter:issue-worktree`의 "이슈를 만들지, 없이 갈지" 질문은 클릭으로 답하는 대화상자로 뜹니다(Claude Code는 AskUserQuestion, Codex는 `request_user_input`). Codex는 Plan 모드에서, 또는 Default 모드에서 `default_mode_request_user_input` 기능을 켜면 대화상자로 보여 주고, 아니면 글로 묻습니다
 - `planter:issue-worktree`를 쓰려면 herdr와 git 저장소. 이슈에서 시작할 때는 연결된 Jira 또는 Linear MCP도 필요합니다
 
 ## 기여하기
