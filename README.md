@@ -39,6 +39,7 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 | `planter:issue-worktree` | herdr only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes |
+| `planter:issue-to-pr` | herdr only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR — the planner never writes product code |
 
 ## Usage
 
@@ -52,6 +53,7 @@ Just ask Claude Code or Codex:
 - "Start ABC-123" — opens a `feat/ABC-123-…` worktree in a herdr workspace named after the issue
 - "File an issue for this and open a worktree for it"
 - "Open a worktree for this, no issue needed"
+- "Take ABC-123 all the way to a PR" — from the planner pane: plan, reviewer-pane approval, worker-pane implementation, two-source diff review, PR
 
 ## How it works
 
@@ -68,6 +70,15 @@ Just ask Claude Code or Codex:
 3. **Open** — one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated.
 4. **Lay out** — planner, worker, and reviewer panes, all in the checkout, left empty for `planter:tenant` to fill.
 
+### Driving an issue to a PR (herdr only)
+
+1. **Analyze** — issue body, parent, links, and comments; the repo's own verification command, commit rules, review contract, and PR format from its docs.
+2. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
+3. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
+4. **Delegate** — the worker pane implements and commits; every later fix round goes there too, never to a subagent inside the planner pane.
+5. **Review** — reviewer pane always, plus the CodeRabbit CLI only when it is installed, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
+6. **PR** — pushed and opened against the base branch in the repo's format.
+
 ## Safety rules
 
 - Never boots a tmux/cmux/herdr server on its own.
@@ -82,6 +93,7 @@ Just ask Claude Code or Codex:
 - Claude Code or Codex with plugin support; `claude` / `codex` CLIs on PATH for those runners
 - The issue-or-not choice in `planter:issue-worktree` is a click-to-answer dialog (AskUserQuestion in Claude Code, `request_user_input` in Codex). Codex shows it in Plan mode, or in Default mode once the `default_mode_request_user_input` feature is enabled; otherwise it asks in plain text
 - For `planter:issue-worktree`: herdr and a git repo — plus a Jira or Linear MCP when the work comes from an issue
+- For `planter:issue-to-pr`: a herdr issue workspace with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
 
 ## Manual verification checklist
 
@@ -96,6 +108,7 @@ Just ask Claude Code or Codex:
 - [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
+- [ ] issue-to-pr: plan gated by the reviewer pane, implementation landed from the worker pane, PR opened
 
 ## License
 
