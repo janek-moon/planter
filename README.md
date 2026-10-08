@@ -39,7 +39,7 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 | `planter:issue-worktree` | herdr only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes |
-| `planter:issue-to-pr` | herdr only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane and CodeRabbit findings, and opens the PR — the planner never writes product code |
+| `planter:issue-to-pr` | herdr only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR — the planner never writes product code |
 
 ## Usage
 
@@ -76,7 +76,7 @@ Just ask Claude Code or Codex:
 2. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
 3. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
 4. **Delegate** — the worker pane implements and commits; every later fix round goes there too, never to a subagent inside the planner pane.
-5. **Review twice** — reviewer pane plus CodeRabbit CLI (when installed) against the base branch; the planner triages, the worker fixes, both reviews rerun until both pass.
+5. **Review** — reviewer pane always, plus the CodeRabbit CLI only when it is installed, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
 6. **PR** — pushed and opened against the base branch in the repo's format.
 
 ## Safety rules

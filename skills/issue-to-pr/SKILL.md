@@ -49,17 +49,17 @@ Prompt the worker pane with the plan file path, the checkout path, and the repo'
 
 Every later round of implementation — review fixes, rework — also goes to the worker pane. Do not route it to an executor subagent inside the planner pane: the user cannot see that work.
 
-## Step 6: Diff review, two sources, both must pass
+## Step 6: Diff review — reviewer pane always, CodeRabbit when available
 
 1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex).
-2. **CodeRabbit CLI** when `command -v coderabbit` (or `cr`) succeeds:
+2. **CodeRabbit CLI (optional).** Only when `command -v coderabbit` (or `cr`) succeeds:
    ```
    coderabbit review --base <base> --committed --agent
    coderabbit review findings   # re-read the last run
    ```
-   Not installed: say so and continue with the reviewer pane alone.
+   Not installed or not authenticated: say so and continue with the reviewer pane alone — never block on it.
 
-The planner triages every finding as real or false positive, sends the real ones to the worker pane, then **re-runs both reviews**. Loop until both pass.
+The planner triages every finding as real or false positive, sends the real ones to the worker pane, then **re-runs every review that ran**. Loop until all of them pass.
 
 ## Step 7: Open the PR
 
