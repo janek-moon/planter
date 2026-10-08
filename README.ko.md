@@ -39,6 +39,7 @@ codex plugin add planter@planter
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
 | `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치 |
+| `planter:issue-to-pr` | herdr 전용, planner pane에서: 이슈를 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. planner는 코드를 쓰지 않습니다 |
 
 ## 사용법
 
@@ -52,6 +53,7 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 - "ABC-123 작업 시작해줘" — `feat/ABC-123-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
 - "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 - "이슈는 됐고 worktree만 열어줘"
+- "ABC-123 끝까지 진행해줘" — planner pane에서: 계획, reviewer pane 승인, worker pane 구현, 2중 diff 리뷰, PR
 
 ## 동작 방식
 
@@ -68,6 +70,15 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 3. **열기** — `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용합니다.
 4. **pane 배치** — planner·worker·reviewer를 worktree 안에 만들고, 비워 둡니다. 여기에 무엇을 띄울지는 `planter:tenant`가 합니다.
 
+### 이슈를 PR까지 끌고 가기 (herdr 전용)
+
+1. **분석** — 이슈 본문·부모·연결 이슈·댓글을 읽고, 검증 명령·커밋 규칙·리뷰 계약·PR 형식은 저장소 문서에서 가져옵니다.
+2. **계획** — 모호한 점은 먼저 근거(저장소 문서, 문서가 가리키는 참조 구현)에서 찾고, 번호 붙은 검증 항목이 있는 계획 파일을 저장소 밖에 씁니다.
+3. **게이트** — reviewer pane이 `approved`라고 답해야 위임합니다. `conditional`이면 계획을 고쳐 다시 보냅니다.
+4. **위임** — worker pane이 구현하고 커밋합니다. 이후 수정 라운드도 전부 worker pane으로 가며, planner pane 안의 서브에이전트로 대신하지 않습니다.
+5. **리뷰** — reviewer pane은 항상, CodeRabbit CLI는 설치돼 있을 때만 기준 브랜치 대비 리뷰합니다. planner가 분류하고 worker가 고치고, 돌렸던 리뷰가 모두 통과할 때까지 다시 돌립니다.
+6. **PR** — push 하고 저장소 형식에 맞춰 기준 브랜치 대상 PR을 엽니다.
+
 ## 안전 규칙
 
 - tmux/cmux/herdr 서버를 스스로 부팅하지 않습니다.
@@ -82,6 +93,7 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 - 플러그인을 지원하는 Claude Code 또는 Codex, 해당 러너를 쓰려면 PATH에 `claude` / `codex` CLI
 - `planter:issue-worktree`의 "이슈를 만들지, 없이 갈지" 질문은 클릭으로 답하는 대화상자로 뜹니다(Claude Code는 AskUserQuestion, Codex는 `request_user_input`). Codex는 Plan 모드에서, 또는 Default 모드에서 `default_mode_request_user_input` 기능을 켜면 대화상자로 보여 주고, 아니면 글로 묻습니다
 - `planter:issue-worktree`를 쓰려면 herdr와 git 저장소. 이슈에서 시작할 때는 연결된 Jira 또는 Linear MCP도 필요합니다
+- `planter:issue-to-pr`를 쓰려면 planner/worker/reviewer pane이 있는 herdr 이슈 workspace, 트래커 MCP, `gh`. CodeRabbit CLI(`coderabbit`)는 선택입니다
 
 ## 기여하기
 

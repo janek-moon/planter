@@ -1,7 +1,7 @@
 {
   "name": "planter",
-  "description": "Delegate tasks to named tmux/cmux/herdr sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back; on herdr, also open an issue worktree in its own workspace",
-  "version": "0.6.0",
+  "description": "Delegate tasks to named tmux/cmux/herdr sessions: find or create the session, run claude, codex, or a plain shell, then monitor and report back; on herdr, also open an issue worktree in its own workspace and drive it from the planner pane to a PR",
+  "version": "0.7.0",
   "author": {
     "name": "Janek",
     "email": "eunho.moon@gmail.com"
@@ -14,7 +14,7 @@
   "interface": {
     "displayName": "planter",
     "shortDescription": "Delegate tasks to tmux/cmux/herdr sessions",
-    "longDescription": "Delegate tasks from a Claude Code or Codex session to named tmux, cmux, or herdr sessions: find or create the session, run claude, codex, or a plain shell in it, monitor the screen, and report the result back. On herdr it also starts work: hand it a Jira or Linear issue and it opens a worktree in a new workspace named after the issue, with planner, worker, and reviewer panes waiting in the checkout.",
+    "longDescription": "Delegate tasks from a Claude Code or Codex session to named tmux, cmux, or herdr sessions: find or create the session, run claude, codex, or a plain shell in it, monitor the screen, and report the result back. On herdr it also starts work: hand it a Jira or Linear issue and it opens a worktree in a new workspace named after the issue, with planner, worker, and reviewer panes waiting in the checkout — and from the planner pane it drives the issue to a PR: plan, reviewer-pane approval, worker-pane implementation, two-source review.",
     "developerName": "Janek",
     "category": "Productivity",
     "capabilities": [
