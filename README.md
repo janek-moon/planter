@@ -3,7 +3,7 @@
 **English** · [한국어](README.ko.md)
 
 <p align="center">
-  <img width="600" alt="Image" src="https://github.com/user-attachments/assets/f3cb41ee-ff64-4245-aa73-6812caca2ae2" />
+  <img width="300" alt="Image" src="https://github.com/user-attachments/assets/f3cb41ee-ff64-4245-aa73-6812caca2ae2" />
 </p>
 
 Delegate tasks from a Claude Code or Codex session to named **tmux**, **cmux**, or
