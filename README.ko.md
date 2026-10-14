@@ -3,7 +3,7 @@
 [English](README.md) · **한국어**
 
 <p align="center">
-  <img width="600" alt="Image" src="https://github.com/user-attachments/assets/f3cb41ee-ff64-4245-aa73-6812caca2ae2" />
+  <img width="300" alt="Image" src="https://github.com/user-attachments/assets/f3cb41ee-ff64-4245-aa73-6812caca2ae2" />
 </p>
 
 Claude Code나 Codex 세션의 작업을 이름이 지정된 **tmux**, **cmux**, **herdr** 세션에 위임합니다 —
