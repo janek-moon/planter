@@ -49,6 +49,8 @@ git fetch origin
 
 Fetch fails (offline, auth): STOP and report — do not create the branch from a base you could not refresh.
 
+Also note whether the branch already exists locally (`git rev-parse --verify --quiet refs/heads/<branch>`). An existing branch is checked out as it is — `--base` only seeds a new one — so it needs the rebase in Step 4 whichever way the worktree opens.
+
 ```
 herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<label>" --no-focus
 ```
@@ -75,10 +77,12 @@ Each split returns the new pane at `.result.pane.pane_id` — rename that one, n
 
 Reuse path (`already_open: true`): list what is there with `herdr pane list --workspace <workspace_id>` before touching anything. Label only what is missing, and run only the splits needed to get back to three — never a second set. If three panes exist but carry no labels, `herdr pane layout --pane <root_pane_id>` gives their positions: top left is the planner, below it the worker, the full-height one on the right the reviewer.
 
-Then rebase the existing branch onto the fetched base — only after seeing the panes, never under a running agent:
-1. Any pane whose agent is `working` or `blocked` (`herdr pane get <pane_id>`): STOP and report.
-2. `git -C <checkout_path> status --porcelain --untracked-files=all` must print nothing. Any output: STOP and report.
-3. `git -C <checkout_path> rebase --no-autostash <base>`. A conflict: `git -C <checkout_path> rebase --abort`, then STOP and report. Any other nonzero exit (a rebase already in progress, a bad ref): STOP and report without aborting — that state is not yours.
+Then, when the branch existed before this run (Step 3), rebase it onto the fetched base — only after seeing the panes, never under a running agent:
+1. Every pane must be empty or hold an agent that is `idle` or `done` (`herdr pane get <pane_id>`). `working`, `blocked`, or `unknown`: STOP and report.
+2. No rebase may already be in progress: `git -C <checkout_path> rev-parse --git-path rebase-merge` and `--git-path rebase-apply` must not exist as directories. Either one does: STOP and report — that state is not yours.
+3. `git -C <checkout_path> status --porcelain --untracked-files=all` must print nothing. Any output: STOP and report.
+4. The branch is already on origin (`git ls-remote --exit-code --heads origin <branch>`): ask before rebasing — rewriting published commits means the next push must be `git push --force-with-lease`. Declined: leave the branch as it is and say so.
+5. `git -C <checkout_path> rebase --no-autostash <base>`. Any nonzero exit — a conflict or anything else: `git -C <checkout_path> rebase --abort`, then STOP and report. The check in 2 makes any rebase state now this run's own.
 
 Never stash, clean, or resolve anything yourself.
 
@@ -94,7 +98,7 @@ Each pane gets its agent, launched but not prompted. Defaults:
 
 The user can override kind and effort per pane in the request ("reviewer는 claude effort high로", "worker codex high"). Map the effort onto the kind's flag: claude `--effort <low|medium|high|xhigh|max>`, codex `-c model_reasoning_effort=<level>`. An effort the kind does not accept fails `agent start` — report it and ask, do not guess a nearby level. If `command -v codex` fails: a default codex reviewer runs as claude with the same effort, and you say so; a codex the user asked for by name means STOP and report.
 
-Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into.
+Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into. If the user named a kind or effort for a pane that already runs an agent, say that the running one was kept and ask whether to restart it — never stop it yourself.
 
 The agents run under the same profile as the session running this skill. A pane's shell does not inherit the caller's environment, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into every pane you start, whatever its kind — the planner needs the reviewer's profile too, to restart it later (planter:issue-to-pr Step 0). Let `printf %q` quote the value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither variable set: nothing to export. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
 

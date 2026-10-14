@@ -68,7 +68,7 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 
 1. **이슈 확인** — 연결된 트래커 MCP에서 키를 찾고, 못 찾으면 거기서 멈춥니다. 키가 없으면 이슈를 만들지(무엇을 만들지 먼저 읽어 드립니다), 이슈 없이 진행할지 물어봅니다.
 2. **이름 정하기** — 브랜치는 그 저장소의 최근 브랜치 모양을 따르고, 기준 브랜치는 `origin/HEAD`에서 가져옵니다(`main`으로 단정하지 않습니다).
-3. **열기** — 먼저 `git fetch origin`으로 기준 브랜치를 최신으로 맞춘 뒤, `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용하되, 최신 기준 브랜치 위로 리베이스합니다(충돌 나면 멈추고 알립니다).
+3. **열기** — 먼저 `git fetch origin`으로 기준 브랜치를 최신으로 맞춘 뒤, `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용하며, 원래 있던 브랜치는 최신 기준 브랜치 위로 리베이스합니다(에이전트가 작업 중이거나, 커밋 안 된 변경이 있거나, 충돌이 나면 멈추고 알립니다. origin에 이미 올라간 브랜치는 동의를 받은 뒤에만 리베이스합니다).
 4. **pane 배치** — planner·worker·reviewer를 worktree 안에 만듭니다.
 5. **에이전트 시작** — 각 pane에 에이전트를 띄워 대기시킵니다. 기본값은 planner claude effort high, worker claude effort medium, reviewer codex effort medium이고, 요청할 때 pane별로 다르게 지정할 수 있습니다("reviewer는 claude effort high로"). 프로파일은 실행한 쪽의 것을 그대로 씁니다(`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 

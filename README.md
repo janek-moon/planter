@@ -68,7 +68,7 @@ Just ask Claude Code or Codex:
 
 1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected, and a key that does not resolve stops the run. With no key you are asked which you want: file an issue (read back to you first) or work without one, leaving the tracker untouched.
 2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
-3. **Open** — `git fetch origin` first so the base is current, then one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated and rebased onto the fresh base (a conflict stops the run).
+3. **Open** — `git fetch origin` first so the base is current, then one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated, and a branch that already existed is rebased onto the fresh base (a busy agent, a dirty tree, or a conflict stops the run; a branch already on origin is rebased only after you agree).
 4. **Lay out** — planner, worker, and reviewer panes, all in the checkout.
 5. **Start** — an idle agent in each: planner claude effort high, worker claude effort medium, reviewer codex effort medium. Name a different kind or effort per pane in the request to override ("reviewer as claude, high"). The agents inherit the caller's profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 

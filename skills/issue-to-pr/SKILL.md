@@ -27,15 +27,14 @@ If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`
 
 ## Issue status follows the work
 
-Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call.
+Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call. Both trackers connected and both return the key: ask which one this work belongs to before reading or moving anything, as planter:issue-worktree Step 1 does.
 
-Move the issue at two points: to the project's in-progress state when Step 1 starts, and to its review state once the PR from Step 7 is open. State names differ per project, so list the transitions the issue actually offers (Jira: `getTransitionsForJiraIssue`, then `transitionJiraIssue`; Linear: the team's workflow states) and pick the one that means in progress / in review. Already at or past that state: leave it. Nothing matches, or the call fails: say so and keep going — the tracker never blocks the flow. Never move an issue to done; merging decides that.
+Move the issue at two points: to the project's in-progress state once Step 1 has read the issue and its comments and the work is still wanted, and to its review state once the PR from Step 7 is open. State names differ per project, so list the transitions the issue actually offers (Jira: `getTransitionsForJiraIssue`, then `transitionJiraIssue`; Linear: the team's workflow states) and pick the one that means in progress / in review. Already at or past that state: leave it. Nothing matches, or the call fails: say so and keep going — the tracker never blocks the flow. Never move an issue to done; merging decides that.
 
 ## Step 1: Analyze the issue
 
-Move the issue to in-progress first (see Issue status follows the work).
-
 - Read the issue through whichever tracker MCP is connected (Linear or Jira): body, parent, linked issues, and **comments** — a comment may already say the work is not needed or decided. With Jira, request the comment field explicitly; the default fetch omits it.
+- The issue and its comments still call for the work: move it to in-progress now (see Issue status follows the work). They say it is not needed or already decided: stop and report, without touching its status.
 - Locate the code the change will touch.
 - Collect the repo's own rules before planning: verification command, commit message rules, review contract, PR title format, base branch. They live in `AGENTS.md` / `CLAUDE.md` / `.github/`; do not invent them. Base branch: `git symbolic-ref --short refs/remotes/origin/HEAD`.
 
@@ -71,7 +70,7 @@ The planner triages every finding as real or false positive, sends the real ones
 
 ## Step 7: Open the PR
 
-Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
+Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If planter:issue-worktree rebased a branch that was already on origin, the plain push is rejected as non-fast-forward: push with `git push --force-with-lease`, never plain `--force`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
 
 Then move the issue to in-review (see Issue status follows the work). Report the PR URL and the status transitions made (or skipped, and why).
 
