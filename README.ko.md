@@ -10,7 +10,7 @@ Claude Code나 Codex 세션의 작업을 이름이 지정된 **tmux**, **cmux**,
 
 herdr에서는 작업을 시작하는 것도 합니다. Jira나 Linear 이슈를 주면 worktree를 열고,
 workspace 이름을 이슈로 붙이고, planner·worker·reviewer pane을 worktree 안에
-만들어 둡니다.
+만들고 각 pane에 에이전트까지 띄워 둡니다.
 
 ## 설치
 
@@ -38,8 +38,8 @@ codex plugin add planter@planter
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
-| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치 |
-| `planter:issue-to-pr` | herdr 전용, planner pane에서: 이슈를 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. planner는 코드를 쓰지 않습니다 |
+| `planter:issue-worktree` | herdr 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄움 |
+| `planter:issue-to-pr` | herdr 전용, planner pane에서: 이슈를 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. 그 사이 이슈 상태도 단계에 맞게 옮깁니다. planner는 코드를 쓰지 않습니다 |
 
 ## 사용법
 
@@ -51,6 +51,7 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 - "이건 codex로 해줘"
 - "보내기만 하고 신경 쓰지 마 (fire and forget)"
 - "ABC-123 작업 시작해줘" — `feat/ABC-123-…` worktree를 열고 workspace 이름을 이슈로 붙입니다
+- "ABC-123 작업 시작해줘, reviewer는 claude effort high로" — pane 하나의 기본 에이전트를 바꿉니다
 - "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 - "이슈는 됐고 worktree만 열어줘"
 - "ABC-123 끝까지 진행해줘" — planner pane에서: 계획, reviewer pane 승인, worker pane 구현, 2중 diff 리뷰, PR
@@ -67,8 +68,9 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 
 1. **이슈 확인** — 연결된 트래커 MCP에서 키를 찾고, 못 찾으면 거기서 멈춥니다. 키가 없으면 이슈를 만들지(무엇을 만들지 먼저 읽어 드립니다), 이슈 없이 진행할지 물어봅니다.
 2. **이름 정하기** — 브랜치는 그 저장소의 최근 브랜치 모양을 따르고, 기준 브랜치는 `origin/HEAD`에서 가져옵니다(`main`으로 단정하지 않습니다).
-3. **열기** — `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용합니다.
-4. **pane 배치** — planner·worker·reviewer를 worktree 안에 만들고, 비워 둡니다. 여기에 무엇을 띄울지는 `planter:tenant`가 합니다.
+3. **열기** — 먼저 `git fetch origin`으로 기준 브랜치를 최신으로 맞춘 뒤, `herdr worktree create` 한 번으로 체크아웃과 workspace, 이름이 함께 만들어집니다. 이미 있으면 다시 만들지 않고 재사용하되, 최신 기준 브랜치 위로 리베이스합니다(충돌 나면 멈추고 알립니다).
+4. **pane 배치** — planner·worker·reviewer를 worktree 안에 만듭니다.
+5. **에이전트 시작** — 각 pane에 에이전트를 띄워 대기시킵니다. 기본값은 planner claude effort high, worker claude effort medium, reviewer codex effort medium이고, 요청할 때 pane별로 다르게 지정할 수 있습니다("reviewer는 claude effort high로"). 프로파일은 실행한 쪽의 것을 그대로 씁니다(`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 
 ### 이슈를 PR까지 끌고 가기 (herdr 전용)
 
@@ -78,6 +80,8 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 4. **위임** — worker pane이 구현하고 커밋합니다. 이후 수정 라운드도 전부 worker pane으로 가며, planner pane 안의 서브에이전트로 대신하지 않습니다.
 5. **리뷰** — reviewer pane은 항상, CodeRabbit CLI는 설치돼 있을 때만 기준 브랜치 대비 리뷰합니다. planner가 분류하고 worker가 고치고, 돌렸던 리뷰가 모두 통과할 때까지 다시 돌립니다.
 6. **PR** — push 하고 저장소 형식에 맞춰 기준 브랜치 대상 PR을 엽니다.
+
+이슈가 있는 작업이면 이슈 상태도 함께 옮깁니다. 분석을 시작할 때 진행 중으로, PR을 연 뒤 리뷰 중으로 — 프로젝트에 실제로 있는 전환 중 맞는 것을 고릅니다. 전환이 없거나 실패하면 알리고 흐름은 계속합니다.
 
 ## 안전 규칙
 

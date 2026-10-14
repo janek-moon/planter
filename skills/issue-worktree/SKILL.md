@@ -7,7 +7,7 @@ description: Use when a task needs its own place to live — from an issue or no
 
 ## Overview
 
-Turn a piece of work into a place to do it: resolve the issue, file one, or skip the tracker entirely, then open a git worktree on a conventionally named branch and label the herdr workspace with the work. It stops there — running anything inside that workspace is planter:tenant's job.
+Turn a piece of work into a place to do it: resolve the issue, file one, or skip the tracker entirely, then open a git worktree on a conventionally named branch and label the herdr workspace with the work, and start an idle agent in each of its three panes. It stops there — prompting those agents is planter:issue-to-pr's or planter:tenant's job.
 
 ## Step 0: herdr only
 
@@ -41,6 +41,14 @@ Base: `git symbolic-ref --short refs/remotes/origin/HEAD` — it already resolve
 
 ## Step 3: Open the worktree
 
+Bring the base up to date first, every time — `origin/<base>` is a remote-tracking ref, and only a fetch moves it:
+
+```
+git fetch origin
+```
+
+Fetch fails (offline, auth): STOP and report — do not create the branch from a base you could not refresh.
+
 ```
 herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<label>" --no-focus
 ```
@@ -49,7 +57,7 @@ herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<lab
 - `--label` becomes the workspace name — no separate rename call.
 - `--no-focus` leaves the user where they are. Pass `--focus` only when they asked to jump there.
 - Any error other than the one below: STOP and report the JSON error as-is. Do not retry with a different branch name.
-- Error `worktree_create_failed` with `already exists`: the worktree is already on disk. Reuse it — `herdr worktree open --cwd "$PWD" --branch <branch> --label "<label>" --no-focus` returns `already_open: true` and renames the workspace to the new label.
+- Error `worktree_create_failed` with `already exists`: the worktree is already on disk. Reuse it — `herdr worktree open --cwd "$PWD" --branch <branch> --label "<label>" --no-focus` returns `already_open: true` and renames the workspace to the new label. The existing branch is rebased onto the fetched base in Step 4, once its panes have been checked.
 
 ## Step 4: Lay out the three panes
 
@@ -67,11 +75,38 @@ Each split returns the new pane at `.result.pane.pane_id` — rename that one, n
 
 Reuse path (`already_open: true`): list what is there with `herdr pane list --workspace <workspace_id>` before touching anything. Label only what is missing, and run only the splits needed to get back to three — never a second set. If three panes exist but carry no labels, `herdr pane layout --pane <root_pane_id>` gives their positions: top left is the planner, below it the worker, the full-height one on the right the reviewer.
 
-Leave the panes as empty shells. The names say what each is for; planter:tenant starts an agent in one when the user asks (`herdr agent start <name> --kind claude|codex --pane <pane_id>`).
+Then rebase the existing branch onto the fetched base — only after seeing the panes, never under a running agent:
+1. Any pane whose agent is `working` or `blocked` (`herdr pane get <pane_id>`): STOP and report.
+2. `git -C <checkout_path> status --porcelain --untracked-files=all` must print nothing. Any output: STOP and report.
+3. `git -C <checkout_path> rebase --no-autostash <base>`. A conflict: `git -C <checkout_path> rebase --abort`, then STOP and report. Any other nonzero exit (a rebase already in progress, a bad ref): STOP and report without aborting — that state is not yours.
 
-## Step 5: Report
+Never stash, clean, or resolve anything yourself.
 
-Workspace id and label, checkout path, branch, the issue URL when there is one, and the three pane names. Do not start an agent — hand the workspace to planter:tenant if the user wants work running in it.
+## Step 5: Start the agents
+
+Each pane gets its agent, launched but not prompted. Defaults:
+
+| Pane | Kind | Effort | Flags after `--` |
+|------|------|--------|------------------|
+| planner | claude | high | `--effort high` |
+| worker | claude | medium | `--effort medium` |
+| reviewer | codex | medium | `-c model_reasoning_effort=medium` |
+
+The user can override kind and effort per pane in the request ("reviewer는 claude effort high로", "worker codex high"). Map the effort onto the kind's flag: claude `--effort <low|medium|high|xhigh|max>`, codex `-c model_reasoning_effort=<level>`. An effort the kind does not accept fails `agent start` — report it and ask, do not guess a nearby level. If `command -v codex` fails: a default codex reviewer runs as claude with the same effort, and you say so; a codex the user asked for by name means STOP and report.
+
+Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into.
+
+The agents run under the same profile as the session running this skill. A pane's shell does not inherit the caller's environment, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into every pane you start, whatever its kind — the planner needs the reviewer's profile too, to restart it later (planter:issue-to-pr Step 0). Let `printf %q` quote the value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither variable set: nothing to export. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
+
+```
+herdr agent start <role>-<workspace_id lowercased> --kind <kind> --pane <pane_id> -- <flags>
+```
+
+The workspace id in the name keeps it unique — every issue workspace has a planner, worker, and reviewer. Start the three one after another; each call returns once its agent is ready for input. On `timeout` — typically a trust dialog for the fresh checkout — read the pane and report what it says, as planter:tenant-claude describes; do not answer it.
+
+## Step 6: Report
+
+Workspace id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:issue-to-pr in the planner pane, or hands a task over through planter:tenant.
 
 ## Common Mistakes
 
@@ -81,3 +116,6 @@ Workspace id and label, checkout path, branch, the issue URL when there is one, 
 - Dropping the slug when there is no key: `feat/` alone is a name git refuses.
 - Removing a worktree to retry: `herdr worktree remove` deletes the checkout but leaves the branch behind, so the retry collides with the same branch name.
 - Opening the worktree with `--focus` and yanking the user out of what they were doing.
+- Creating the worktree without `git fetch origin` first — the branch starts from a stale base.
+- Stashing or resolving a rebase conflict yourself on the reuse path — abort and report instead.
+- Running `pane run` exports into a pane that already runs an agent — the text lands in its input box.
