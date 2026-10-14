@@ -23,11 +23,18 @@ Use the `pane_id` of the rows labeled `worker` and `reviewer`; your own pane is 
 
 Pane commands must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
 
-If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`), it is a bare shell — common after a herdr restart. Start the agent as planter:tenant-claude describes: `herdr agent start <name> --kind claude --pane <worker pane_id>` for the worker, `--kind codex` for the reviewer. It returns once the agent is ready for input.
+If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:issue-worktree Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input.
+
+## Issue status follows the work
+
+Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call. Both trackers connected and both return the key: ask which one this work belongs to before reading or moving anything, as planter:issue-worktree Step 1 does.
+
+Move the issue at two points: to the project's in-progress state once Step 1 has read the issue and its comments and the work is still wanted, and to its review state once the PR from Step 7 is open. State names differ per project, so list the transitions the issue actually offers (Jira: `getTransitionsForJiraIssue`, then `transitionJiraIssue`; Linear: the team's workflow states) and pick the one that means in progress / in review. Already at or past that state: leave it. Nothing matches, or the call fails: say so and keep going — the tracker never blocks the flow. Never move an issue to done; merging decides that.
 
 ## Step 1: Analyze the issue
 
 - Read the issue through whichever tracker MCP is connected (Linear or Jira): body, parent, linked issues, and **comments** — a comment may already say the work is not needed or decided. With Jira, request the comment field explicitly; the default fetch omits it.
+- The issue and its comments still call for the work: move it to in-progress now (see Issue status follows the work). They say it is not needed or already decided: stop and report, without touching its status.
 - Locate the code the change will touch.
 - Collect the repo's own rules before planning: verification command, commit message rules, review contract, PR title format, base branch. They live in `AGENTS.md` / `CLAUDE.md` / `.github/`; do not invent them. Base branch: `git symbolic-ref --short refs/remotes/origin/HEAD`.
 
@@ -63,11 +70,13 @@ The planner triages every finding as real or false positive, sends the real ones
 
 ## Step 7: Open the PR
 
-Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
+Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If planter:issue-worktree rebased a branch that was already on origin, the plain push is rejected as non-fast-forward: push with `git push --force-with-lease`, never plain `--force`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
+
+Then move the issue to in-review (see Issue status follows the work). Report the PR URL and the status transitions made (or skipped, and why).
 
 ## Recovery
 
-- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit`, then `herdr pane run <pane_id> "cd <checkout_path> && codex"`, choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
+- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit` and read the pane until a shell prompt shows (nothing within 30 s: STOP and report), then `herdr pane run <pane_id> "cd <checkout_path> && codex -c model_reasoning_effort=<effort>"` (the reviewer effort from planter:issue-worktree Step 5 — medium unless the user named another), choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
 - Before injecting, read the pane (`--source visible --lines 20`). If the user is mid-typing there, wait.
 
 ## Common Mistakes
@@ -78,3 +87,5 @@ Push the branch and open the PR against the base branch, following the repo's ti
 - Delegating on a `conditional` review — fix the plan until it reads `approved`.
 - Asking the user before reading the issue comments, repo docs, and reference source.
 - Letting the planner commit or push code it wrote itself.
+- Hardcoding a transition name like "In Progress" — read the issue's transitions first.
+- Stopping the flow because a status transition failed.
