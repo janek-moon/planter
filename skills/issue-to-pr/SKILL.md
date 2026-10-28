@@ -25,6 +25,22 @@ Pane commands must run outside any sandbox the tool wraps around shell calls (in
 
 If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:issue-worktree Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input.
 
+## Hearing back from the panes
+
+The planner usually sits idle at its input prompt after handing work off, and nothing wakes it when the pane finishes. So every hand-off below (Steps 4, 5, 6, and every rework round) does two things:
+
+1. **The pane reports back.** End the prompt with this instruction, filling in your own `$HERDR_PANE_ID` and the pane's role:
+   > When you are finished, or stop to ask a question, run as your last action: `herdr agent prompt <planner_pane_id> "[<role>] done: <one-line summary>"` (or `"[<role>] question: <the question>"`).
+
+   The message lands in the planner's input and starts a new turn. On it, read the pane (`herdr agent read <pane_id> --source recent-unwrapped --lines 200`) and continue.
+2. **The planner watches as a backstop.** Send the prompt itself as `herdr agent prompt <pane_id> '<prompt>' --wait`, run in the background with no `--timeout` (a timeout is how an idle planner misses the finish). `--wait` first sees the pane start working, then returns on idle, done, or blocked; a separate `herdr agent wait` right after a plain prompt can match the pane's idle state from before the prompt landed. When it returns and that pane's report already arrived, ignore it. When it has not, read the pane:
+   - `blocked`: the pane is waiting for an approval — report it, do not answer for the user.
+   - The output ends in a question: report the question.
+   - The screen says the work is still going (Claude shows `N shell still running` after pushing a long command to the background): watch again with `herdr agent wait <pane_id> --until working && herdr agent wait <pane_id>` in the background.
+   - The screen says the work is finished: treat it as done and continue.
+
+The report fails when the pane's own sandbox blocks the `herdr` call (it then waits on an approval, which the backstop sees as `blocked`) or when the planner is itself `blocked` (herdr rejects the prompt). Codex as the planner may not be woken when a background command ends; then the pane's report is the only signal.
+
 ## Issue status follows the work
 
 Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call. Both trackers connected and both return the key: ask which one this work belongs to before reading or moving anything, as planter:issue-worktree Step 1 does.
@@ -48,17 +64,17 @@ Write a plan file outside the repo (for example `~/.claude/plans/<KEY>-<slug>.md
 
 ## Step 4: Plan review in the reviewer pane
 
-Prompt the reviewer pane with the plan file path, the verification item numbers, and the output format: one line reading `approved` / `conditional` / `rejected`, then the reasons. `conditional` or `rejected`: fix the plan, resend. Proceed only on `approved`. An internal plan-review subagent is not a substitute for this step.
+Prompt the reviewer pane with the plan file path, the verification item numbers, and the output format: one line reading `approved` / `conditional` / `rejected`, then the reasons; hear back as in Hearing back from the panes. `conditional` or `rejected`: fix the plan, resend. Proceed only on `approved`. An internal plan-review subagent is not a substitute for this step.
 
 ## Step 5: Delegate implementation to the worker pane
 
-Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 1 (verification command, commit rules). The worker commits; the planner does not. Wait with `herdr agent wait` in the background; `blocked` means the worker is waiting for an approval — report it, do not answer for the user.
+Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 1 (verification command, commit rules). The worker commits; the planner does not. Hear back as in Hearing back from the panes.
 
 Every later round of implementation — review fixes, rework — also goes to the worker pane. Do not route it to an executor subagent inside the planner pane: the user cannot see that work.
 
 ## Step 6: Diff review — reviewer pane always, CodeRabbit when available
 
-1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex).
+1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex). Hear back as in Hearing back from the panes.
 2. **CodeRabbit CLI (optional).** Only when `command -v coderabbit` (or `cr`) succeeds:
    ```
    coderabbit review --base <base> --committed --agent
