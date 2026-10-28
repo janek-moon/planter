@@ -85,6 +85,8 @@ Just ask Claude Code or Codex:
 
 When the work has an issue, its status moves with it: to in-progress when analysis starts, to in-review once the PR is open — whichever of the project's own transitions match. A failed or missing transition is reported, never blocking.
 
+Every hand-off asks the worker or reviewer pane to message the planner pane when it finishes or has a question, so an idle planner wakes up on its own. The planner also watches each hand-off in the background: a pane that goes quiet without reporting — waiting on an approval, or idle while its own background command still runs — is caught and reported.
+
 ## Safety rules
 
 - Never boots a tmux/cmux/herdr server on its own.
