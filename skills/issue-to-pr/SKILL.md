@@ -32,7 +32,7 @@ The planner usually sits idle at its input prompt after handing work off, and no
 1. **The pane reports back.** End the prompt with this instruction, filling in your own `$HERDR_PANE_ID` and the pane's role:
    > When you are finished, or stop to ask a question, run as your last action: `herdr agent prompt <planner_pane_id> "[<role>] done: <one-line summary>"` (or `"[<role>] question: <the question>"`).
 
-   The message lands in the planner's input and starts a new turn. On it, read the pane (`herdr agent read <pane_id> --source recent-unwrapped --lines 200`) and continue.
+   The message lands in the planner's input and starts a new turn. The report is a wake-up, not the result: it is sent mid-turn, and the pane's final answer (a review verdict, its findings) is written after it. So first `herdr agent wait <pane_id>` until that turn ends (`blocked`: handle as below), then read the pane (`herdr agent read <pane_id> --source recent-unwrapped --lines 200`) and continue.
 2. **The planner watches as a backstop.** Send the prompt itself as `herdr agent prompt <pane_id> '<prompt>' --wait`, run in the background with no `--timeout` (a timeout is how an idle planner misses the finish). `--wait` first sees the pane start working, then returns on idle, done, or blocked; a separate `herdr agent wait` right after a plain prompt can match the pane's idle state from before the prompt landed. When it returns and that pane's report already arrived, ignore it. When it has not, read the pane:
    - `blocked`: the pane is waiting for an approval — report it, do not answer for the user.
    - The output ends in a question: report the question.
