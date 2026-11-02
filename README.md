@@ -7,10 +7,10 @@
 </p>
 
 Delegate tasks from a Claude Code or Codex session to named **tmux**, **cmux**, or
-**herdr** sessions — find or create the session, run `claude` (default), `codex`, or a
+**herdr** sessions (the terminal app or the Herdr desktop app) — find or create the session, run `claude` (default), `codex`, or a
 plain shell in it, monitor the screen, and report the result back.
 
-On herdr it also starts work: hand it a Jira or Linear issue and it opens a
+On herdr and the Herdr app it also starts work: hand it a Jira or Linear issue and it opens a
 worktree in a new workspace named after the issue, with planner, worker, and
 reviewer agents already running in the checkout.
 
@@ -36,12 +36,12 @@ The same skills load in both; start a new session after installing.
 
 | Skill | Purpose |
 |---|---|
-| `planter:tenant` | Entry point: detects tmux/cmux/herdr, finds or creates the named session, routes to a runner |
+| `planter:tenant` | Entry point: detects tmux/cmux/herdr/Herdr app, finds or creates the named session, routes to a runner |
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
-| `planter:issue-worktree` | herdr only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
-| `planter:issue-to-pr` | herdr only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:issue-worktree` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
+| `planter:issue-to-pr` | herdr or Herdr app only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
 
 ## Usage
 
@@ -64,17 +64,17 @@ Just ask Claude Code or Codex:
 2. **Resolve** — the named session/workspace is reused if it exists, created and named if not.
 3. **Inspect** — the target screen is captured before any keystroke is sent; occupied panes are never overwritten.
 4. **Run** — the runner launches claude/codex or injects the sentinel-wrapped shell command.
-5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr, the agent state (`idle`/`working`/`blocked`) reported by herdr is used instead of screen polling. Fire-and-forget skips this on request.
+5. **Monitor** — the screen is polled until the completion signal fires and output stabilizes, then the result is summarized. On herdr and the Herdr app, the agent state (`idle`/`working`/`blocked`) they report is used instead of screen polling. Fire-and-forget skips this on request.
 
-### Starting work (herdr only)
+### Starting work (herdr or Herdr app only)
 
 1. **Resolve** — the issue key is looked up in whichever tracker MCP is connected, and a key that does not resolve stops the run. With no key you are asked which you want: file an issue (read back to you first) or work without one, leaving the tracker untouched.
 2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
-3. **Open** — `git fetch origin` first so the base is current, then one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated, and a branch that already existed is rebased onto the fresh base (a busy agent, a dirty tree, or a conflict stops the run; a branch already on origin is rebased only after you agree).
+3. **Open** — `git fetch origin` first so the base is current, then one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated (in the Herdr app, `git worktree add` makes the checkout under the same `~/.herdr/worktrees/` path and `herdr-app` opens a space for it), and a branch that already existed is rebased onto the fresh base (a busy agent, a dirty tree, or a conflict stops the run; a branch already on origin is rebased only after you agree).
 4. **Lay out** — planner, worker, and reviewer panes, all in the checkout.
 5. **Start** — an idle agent in each: planner claude effort high, worker claude effort medium, reviewer codex effort medium. Name a different kind or effort per pane in the request to override ("reviewer as claude, high"). The agents inherit the caller's profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 
-### Driving an issue to a PR (herdr only)
+### Driving an issue to a PR (herdr or Herdr app only)
 
 1. **Analyze** — issue body, parent, links, and comments; the repo's own verification command, commit rules, review contract, and PR format from its docs.
 2. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
@@ -90,18 +90,19 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 ## Safety rules
 
 - Never boots a tmux/cmux/herdr server on its own.
-- Only drives herdr from inside a herdr pane.
+- Only drives herdr from inside a herdr pane, and the Herdr app from inside one of its terminals.
 - Never types over a pane occupied by another program.
 - Never answers trust/permission/login dialogs in the delegated session without explicit user authorization.
 - Never files a tracker issue without reading it back first, and never files one to cover an issue key that failed to resolve.
 
 ## Requirements
 
-- tmux, cmux, and/or herdr
+- tmux, cmux, herdr, and/or the Herdr desktop app (`hc` and `herdr-app` on PATH)
+- git 2.13 or later — the skills use `git worktree` and `git branch --format`
 - Claude Code or Codex with plugin support; `claude` / `codex` CLIs on PATH for those runners
 - The issue-or-not choice in `planter:issue-worktree` is a click-to-answer dialog (AskUserQuestion in Claude Code, `request_user_input` in Codex). Codex shows it in Plan mode, or in Default mode once the `default_mode_request_user_input` feature is enabled; otherwise it asks in plain text
-- For `planter:issue-worktree`: herdr and a git repo — plus a Jira or Linear MCP when the work comes from an issue
-- For `planter:issue-to-pr`: a herdr issue workspace with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
+- For `planter:issue-worktree`: herdr or the Herdr app, and a git repo — plus a Jira or Linear MCP when the work comes from an issue
+- For `planter:issue-to-pr`: a herdr issue workspace (or Herdr app space) with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
 
 ## Manual verification checklist
 
@@ -113,6 +114,9 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [x] shell runner: sentinel DONE and FAIL paths
 - [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
 - [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
+- [x] Herdr app: `terminal.open` splits the caller's pane right/down with focus given back, shell sentinel via `hc wait --output`, claude and `codex --no-daemon` launched through a login shell, multi-line `hc send --wait`, pane report via `hc send`
+- [x] Herdr app: issue-worktree opens a `git worktree` space with planner top left, worker below, reviewer on the right, roles marked by `planter.role` labels
+- [ ] Herdr app: issue-to-pr end to end
 - [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] issue-worktree: base fetched before create, reuse path rebased, default agents started with their effort, per-pane override
 - [ ] issue-to-pr: issue moved to in-progress at analysis and in-review after the PR

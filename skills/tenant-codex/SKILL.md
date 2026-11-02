@@ -1,6 +1,6 @@
 ---
 name: tenant-codex
-description: Use when the user asks codex (OpenAI Codex CLI) to do, fix, build, or run a task — "ask codex to fix this", "hand this to codex", "codex에게 요청해줘/시켜줘/맡겨줘", "codex로 돌려줘" — with or without naming a tmux/cmux/herdr session, window, pane, or surface. Not for "codex review"/"codex challenge"/"consult codex" second-opinion requests without execution
+description: Use when the user asks codex (OpenAI Codex CLI) to do, fix, build, or run a task — "ask codex to fix this", "hand this to codex", "codex에게 요청해줘/시켜줘/맡겨줘", "codex로 돌려줘" — with or without naming a tmux/cmux/herdr/Herdr app session, window, pane, or surface. Not for "codex review"/"codex challenge"/"consult codex" second-opinion requests without execution
 ---
 
 # Running codex in a Delegated Session
@@ -24,6 +24,10 @@ Same flow as planter:tenant-claude with the `codex` CLI: launch or reuse, wait f
 ## herdr
 
 Follow planter:tenant-claude's herdr section with `--kind codex` (reuse when `.agent` = `codex`). Codex notices above still apply: an update notice, trust confirmation, or login screen that makes `agent start` time out, and approval or usage-limit prompts that settle as `blocked` — read and report them, never answer them.
+
+## Herdr app
+
+Follow planter:tenant-claude's Herdr app section with `codex --no-daemon <flags>` in place of `claude <flags>` (reuse when `.status.app` = `codex`; `<env>` is `CODEX_HOME=<value> ` when yours sets it). `--no-daemon` is required: without it codex runs its commands in a background daemon outside the terminal, where hc cannot see them. The codex notices above still apply.
 
 ## Common Mistakes
 

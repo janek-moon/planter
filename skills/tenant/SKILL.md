@@ -1,13 +1,13 @@
 ---
 name: tenant
-description: Use when the user asks to delegate, hand off, or run a task in another terminal session, window, pane, split, surface, or workspace on tmux, cmux, or herdr — e.g. "run this in the build session", "delegate this to a new session", "build 세션에서 돌려줘", "다른 세션에서 실행해줘", "이 서피스/세션에 요청해줘", "옆 패널에서 돌려", "새 창에서 시켜줘", "세션에 위임해줘/맡겨줘/넘겨줘"
+description: Use when the user asks to delegate, hand off, or run a task in another terminal session, window, pane, split, surface, workspace, or space on tmux, cmux, herdr, or the Herdr desktop app — e.g. "run this in the build session", "delegate this to a new session", "build 세션에서 돌려줘", "다른 세션에서 실행해줘", "이 서피스/세션에 요청해줘", "옆 패널에서 돌려", "새 창에서 시켜줘", "세션에 위임해줘/맡겨줘/넘겨줘"
 ---
 
 # Delegating Work to a tmux/cmux/herdr Session
 
 ## Overview
 
-Hand a task to a named session under tmux, cmux, or herdr: detect the live multiplexer from real state, find or create the named target, inspect it, then route to a runner skill. Never assume environment state — verify each step with a real command.
+Hand a task to a named session under tmux, cmux, herdr, or the Herdr app: detect the live multiplexer from real state, find or create the named target, inspect it, then route to a runner skill. Never assume environment state — verify each step with a real command.
 
 ## Step 1: Detect the multiplexer
 
@@ -17,11 +17,14 @@ Hand a task to a named session under tmux, cmux, or herdr: detect the live multi
 | `$CMUX_WORKSPACE_ID` set | running inside a cmux terminal |
 | `tmux ls` exits 0 | a tmux server is alive |
 | `cmux ping` exits 0 | the cmux app is alive |
-| `$HERDR_ENV` = `1` | running inside a herdr pane |
+| `$HERDR_ENV` = `1` | running inside a herdr pane (the `herdr` terminal app) |
+| `$HC_TERMINAL_ID` set and `herdr-app status` exits 0 | running inside a Herdr app terminal, window open |
 
 Priority: backend the user explicitly named > innermost mux you are running inside (`$TMUX` wins over `$CMUX_WORKSPACE_ID`) > whichever live tmux/cmux server responds. If nothing responds, STOP and report that delegation is impossible — never start a tmux/cmux/herdr server yourself.
 
 herdr is usable ONLY from inside herdr (`$HERDR_ENV` = `1`) — never drive a herdr session from outside it, even if its server is running. When `$HERDR_ENV` and `$TMUX` (or `$CMUX_WORKSPACE_ID`) are both set and the user named neither, you cannot tell which is innermost: ask the user.
+
+Two different products are both called herdr. **herdr** is the terminal multiplexer driven by the `herdr` CLI. The **Herdr app** is the desktop app: its terminals run in herdr-core and are driven by `hc`; `herdr-app` only changes what the window shows. The `herdr` CLI cannot see the app's terminals, and `hc` cannot see herdr panes. The same inside-only rule applies to the Herdr app (`$HC_TERMINAL_ID` set), and when `$HC_TERMINAL_ID` is set together with `$HERDR_ENV`, `$TMUX`, or `$CMUX_WORKSPACE_ID`, ask which one the user means.
 
 ## Step 2: Find or create the target — keep it visible
 
@@ -47,12 +50,25 @@ herdr (every command returns JSON — read ids from the response, never predict 
 - Do NOT create a workspace, tab, or worktree unless the user asked for that topology.
 - Always target `--current` or an explicit pane id / agent name — omitting the target may hit the pane another client has focused.
 
+Herdr app (`hc` replies are JSON with `--json`; read ids from the reply):
+- Your own place: `hc get "$HC_TERMINAL_ID" --json` → `.labels["herdr.space"]` and `.labels["herdr.tab"]`. Do not use `herdr-app status` for this — it reports what the user is looking at, which may be another space.
+- Exists? `herdr-app ls` lists spaces > tabs > terminals. Within your space, `hc get <t> --json` on each terminal: match `.labels["planter.name"]` (set by Create below), or `.name` for a terminal started elsewhere with `hc run --name`. Reuse its `.terminal` id (`t7`); `.status.app` says what runs in it (`claude-code`, `codex`, or none for a shell) and `.status.state` its state. `hc ls` shows every user's live terminal, not just yours — always scope to your space.
+- Create (visible split of your own pane): your pane is the `.pane` of your `$HC_TERMINAL_ID` row in `herdr-app ls`. Pick `right` when your terminal is wide, `down` when narrow/tall — `hc get "$HC_TERMINAL_ID" --json` gives `.cols` and `.rows`; a cell is about twice as tall as wide, so `cols > 2 × rows` is wide — unless the user named a direction. `terminal.open` splits the *focused* pane and then focuses the new one, so focus yours first and give it back after:
+  ```
+  herdr-app do pane.focus --pane <your pane>
+  herdr-app do terminal.open '{"place": "<right|down>", "folder": "<cwd>"}'
+  herdr-app do pane.focus --pane <your pane>
+  ```
+  It returns `{ "pane", "terminal" }`. Without `argv` the new terminal is a shell; a runner passes its program as `argv` here (see planter:tenant-claude). Mark it so it can be found again: `hc label <terminal> planter.name=<name>` — `terminal.open`'s own `name` does not stick to the terminal. Do not use `hc run --label herdr.space=…` for a visible target: the window places such a terminal by its layout, not beside you.
+- Do NOT create a space or tab unless the user asked for that topology.
+
 ## Step 3: Inspect before injecting
 
 Capture the target screen FIRST:
 - tmux: `tmux capture-pane -p -t <target>`
 - cmux: `cmux read-screen --workspace <ref> --surface <ref>`
 - herdr: `herdr pane read <pane_id> --source recent-unwrapped --lines 50` (plain text, not JSON); `herdr pane get <pane_id>` shows whether an agent occupies it (`.agent`, `.agent_status`)
+- Herdr app: `hc read <t> --lines 50` (plain text); `hc get <t> --json` shows whether an agent occupies it (`.status.app`, `.status.state`) and what runs in front (`.foreground.argv`)
 
 If a foreground program (editor, REPL, running job) occupies the target, STOP — report what is on screen and ask before touching it.
 
@@ -70,6 +86,10 @@ Default: after injection, poll the target screen every 15–30 seconds. The task
 
 herdr: do not compare captures — herdr reports state. Agents: wait on `agent_status` (`idle`/`done` = settled, `blocked` = approval or question dialog, `working`); shell: wait for the sentinel with `herdr pane wait-output`. Use `--timeout 600000` (10 minutes); on `timeout`, report interim status, then wait again. Scrollback for the report: `herdr pane read <pane_id> --source recent-unwrapped --lines 200`.
 
+Herdr app: the same — `hc` reports state (`idle`, `working`, `done`, `blocked`, `error`). Agents: `hc wait <t> --timeout 600`; shell: see planter:tenant-shell. `--timeout` is in **seconds** here; `reason: timeout` is a check-in, not a failure — report interim status and wait again. `hc send` refuses a `blocked` terminal unless `--force`: never pass `--force`, that would answer the dialog for the user. Scrollback: `hc read <t> --lines 200`.
+
+Shell calls to `herdr`, `hc`, and `herdr-app` talk to a local socket; run them outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
+
 Fire-and-forget (only when the user asks): confirm the payload landed with one capture, then stop — no polling, no result report.
 
 ## Common Mistakes
@@ -77,5 +97,6 @@ Fire-and-forget (only when the user asks): confirm the payload landed with one c
 - Sending keys without capturing the screen first.
 - Assuming a session still exists because it existed earlier — re-check at send time.
 - Starting a mux server when none responds — report instead.
-- Driving herdr from outside a herdr pane (`$HERDR_ENV` unset).
+- Driving herdr from outside a herdr pane (`$HERDR_ENV` unset), or the Herdr app from outside its terminals (`$HC_TERMINAL_ID` unset).
+- Using the `herdr` CLI inside the Herdr app — it talks to a different server and shows an empty list.
 - Reusing remembered pane indexes — they shift; resolve fresh.

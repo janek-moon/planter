@@ -1,6 +1,6 @@
 ---
 name: issue-worktree
-description: Use when a task needs its own place to live — from an issue or not — "ABC-123 작업 시작해줘", "이 이슈로 worktree 열어줘", "이슈 만들고 브랜치 파줘", "이슈 없이 worktree만 열어줘", "start work on ABC-123", "open a worktree for this" — takes a Jira/Linear issue key, files one, or works without any issue, then opens a git worktree in a new herdr workspace named after the work
+description: Use when a task needs its own place to live — from an issue or not — "ABC-123 작업 시작해줘", "이 이슈로 worktree 열어줘", "이슈 만들고 브랜치 파줘", "이슈 없이 worktree만 열어줘", "start work on ABC-123", "open a worktree for this" — takes a Jira/Linear issue key, files one, or works without any issue, then opens a git worktree in a new herdr workspace or Herdr app space named after the work
 ---
 
 # Starting Work in Its Own herdr Workspace
@@ -9,9 +9,9 @@ description: Use when a task needs its own place to live — from an issue or no
 
 Turn a piece of work into a place to do it: resolve the issue, file one, or skip the tracker entirely, then open a git worktree on a conventionally named branch and label the herdr workspace with the work, and start an idle agent in each of its three panes. It stops there — prompting those agents is planter:issue-to-pr's or planter:tenant's job.
 
-## Step 0: herdr only
+## Step 0: herdr or the Herdr app only
 
-Requires `$HERDR_ENV` = `1`. Worktree workspaces are a herdr feature; there is no tmux/cmux equivalent. If the check fails, STOP and report.
+Requires `$HERDR_ENV` = `1` (herdr) or `$HC_TERMINAL_ID` set with `herdr-app status` exiting 0 (the Herdr app — see planter:tenant for telling them apart). There is no tmux/cmux equivalent. If neither holds, STOP and report. Steps 1, 2, and 6 are the same for both; in the Herdr app, Steps 3–5 follow the **Herdr app** section below instead.
 
 ## Step 1: Resolve the issue
 
@@ -108,9 +108,45 @@ herdr agent start <role>-<workspace_id lowercased> --kind <kind> --pane <pane_id
 
 The workspace id in the name keeps it unique — every issue workspace has a planner, worker, and reviewer. Start the three one after another; each call returns once its agent is ready for input. On `timeout` — typically a trust dialog for the fresh checkout — read the pane and report what it says, as planter:tenant-claude describes; do not answer it.
 
+## Herdr app: Steps 3–5
+
+The app has no worktree command, so git makes the checkout and the app gets a space for it. Same rules as above where not restated: fetch first, never retry under another branch name, rebase an existing branch only after the checks in Step 4, never stash or resolve anything yourself.
+
+**Step 3 — checkout.** `git fetch origin` (fails: STOP). The path follows herdr's layout so both front ends find the same checkouts: `~/.herdr/worktrees/<repo>/<branch lowercased, every / turned into ->` (`feat/ABC-123-x` → `feat-abc-123-x`), where `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`).
+- `git worktree list --porcelain` already shows the branch checked out: reuse that path as it is.
+- Otherwise the branch exists locally: `git worktree add <path> <branch>`. It does not: `git worktree add --no-track -b <branch> <path> <base>` — without `--no-track` the new branch would track the base (`origin/main`), and a later push or pull would aim at the base branch.
+- Any error: STOP and report it as-is.
+
+**Step 3 — space.** Look in `herdr-app ls` for a space whose `.folder` is the checkout path. Found: reuse it, and rename it to the label (`herdr-app do space.rename --id <space> --name "<label>"`). Not found:
+
+```
+herdr-app do space.new --name "<label>" --folder "<checkout_path>" --tab main --argv '<planner argv>'
+```
+
+`<planner argv>` is the JSON array `["<$SHELL>", "-lic", "<env><planner command>; exec \"$SHELL\" -l"]` from Step 5 — build it with a JSON encoder, not by hand. It returns `{ "space", "tab", "terminal" }` and switches the window to the new space — there is no no-focus option. Unless the user asked to jump there, switch back to the space you run in (`.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`, read before `space.new`) once Step 5 has opened its splits — they focus the new space again: `herdr-app do space.select --id <that space>`.
+
+**Step 4 — panes.** Same shape as herdr: `planner` top left, `worker` below it, `reviewer` down the right side. The space's first terminal is the planner. A terminal added with `hc run --label herdr.space=…` lands wherever the window's layout puts it (three columns), so the other two are opened as splits of the planner pane instead, in Step 5. The app keeps no terminal name for them, so every role is marked with an hc label — `hc label <t> planter.role=<planner|worker|reviewer>` — and found by it: walk the space's terminals in `herdr-app ls` and read `.labels["planter.role"]` from `hc get <t> --json`. Label the planner as soon as `space.new` returns.
+
+Reuse path: list the space's terminals in `herdr-app ls` before touching anything, and create only what is missing — never a second worker or reviewer. The rebase checks of Step 4 apply unchanged, with `hc get <t> --json` `.status.state` in place of `herdr pane get` (no `.status.app` means a bare shell).
+
+**Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --effort <level>`, codex `codex --no-daemon -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` carries the profile: `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets, each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
+
+- Planner: a new space starts it through `--argv` above. On the reuse path, a planner terminal at a shell prompt (`hc read <terminal> --lines 5`) gets `hc send <terminal> '<env><command>'`. Do not type into the shell of a space you just made: its startup files may still be loading, and the typed Enter then lands on claude's trust dialog and picks "No, exit".
+- Reviewer, then worker — each a split of the planner pane (its `.pane` id in `herdr-app ls`). `terminal.open` splits the focused pane, so focus the planner pane first, every time:
+  ```
+  herdr-app do pane.focus --pane <planner_pane>
+  herdr-app do terminal.open '{"place": "right", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><reviewer command>; exec \"$SHELL\" -l"]}'
+  herdr-app do pane.focus --pane <planner_pane>
+  herdr-app do terminal.open '{"place": "down", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><worker command>; exec \"$SHELL\" -l"]}'
+  ```
+  Build each JSON object with a JSON encoder, not by hand. Each call returns `{ "pane", "terminal" }`; label that terminal with its role right away. Right first, then down, gives the full-height reviewer on the right and the worker under the planner. The login shell loads the user's `PATH` (a bare `codex` fails to spawn without it), and `exec "$SHELL" -l` leaves a shell behind if the agent exits.
+  Then switch back to your own space with `space.select` (Step 3).
+
+After each start, `hc wait <t> --timeout 60` returns `idle` once the agent is ready for input; confirm `hc get <t> --json` shows the expected `.status.app` (`claude-code` or `codex`). Anything else — typically a trust dialog for the fresh checkout — read the screen (`hc read <t> --lines 50`) and report it; do not answer it. On the reuse path, a terminal that already runs an agent (`.status.app` set) is kept as it is, as above; if its `.status.app` is not the kind that role should run, say so and ask — never stop it yourself.
+
 ## Step 6: Report
 
-Workspace id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:issue-to-pr in the planner pane, or hands a task over through planter:tenant.
+Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:issue-to-pr in the planner pane, or hands a task over through planter:tenant.
 
 ## Common Mistakes
 
