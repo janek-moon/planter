@@ -1,19 +1,19 @@
 ---
 name: issue-to-pr
-description: Use when running in a herdr planner pane and asked to carry an issue through to a pull request — "ABC-123 끝까지 진행해줘", "이슈 분석해서 구현 계획 작성해", "reviewer pane 에 계획/diff 리뷰 받아", "worker pane 에 구현 위임해", "coderabbit 리뷰 후 PR 생성", "plan this issue and hand it to the worker pane", "get the reviewer pane to review this" — the planner analyzes, plans, and gates; the worker and reviewer panes do the implementing and reviewing
+description: Use when running in a herdr or Herdr app planner pane and asked to carry an issue through to a pull request — "ABC-123 끝까지 진행해줘", "이슈 분석해서 구현 계획 작성해", "reviewer pane 에 계획/diff 리뷰 받아", "worker pane 에 구현 위임해", "coderabbit 리뷰 후 PR 생성", "plan this issue and hand it to the worker pane", "get the reviewer pane to review this" — the planner analyzes, plans, and gates; the worker and reviewer panes do the implementing and reviewing
 ---
 
 # Driving an Issue to a PR from the planner Pane
 
 ## Overview
 
-A herdr issue workspace (see planter:issue-worktree) has three panes: `planner`, `worker`, `reviewer`. This skill is what the planner does in it. The planner reads the issue, writes the plan, gets it reviewed, delegates the implementation, triages review findings, and opens the PR. **The planner never writes product code.** Implementation goes to the worker pane; review goes to the reviewer pane; both are visible to the user, which is the point.
+A herdr issue workspace or Herdr app space (see planter:issue-worktree) has three panes: `planner`, `worker`, `reviewer`. This skill is what the planner does in it. The planner reads the issue, writes the plan, gets it reviewed, delegates the implementation, triages review findings, and opens the PR. **The planner never writes product code.** Implementation goes to the worker pane; review goes to the reviewer pane; both are visible to the user, which is the point.
 
-**REQUIRED BACKGROUND:** planter:tenant-claude (herdr section) for `herdr agent prompt/wait/read` mechanics. This skill only adds what is specific to the three-pane flow.
+**REQUIRED BACKGROUND:** planter:tenant-claude (herdr section) for `herdr agent prompt/wait/read` mechanics. This skill only adds what is specific to the three-pane flow. The commands below are herdr's; in the Herdr app, swap them as the **Herdr app** section says.
 
-## Step 0: herdr only, and find your panes
+## Step 0: herdr or the Herdr app, and find your panes
 
-Requires `$HERDR_ENV` = `1`. Then pick the targets from your own workspace:
+Requires `$HERDR_ENV` = `1`, or the Herdr app (`$HC_TERMINAL_ID` set, `herdr-app status` exits 0 — Herdr app section below). Then, in herdr, pick the targets from your own workspace:
 
 ```
 herdr pane list --workspace "$HERDR_WORKSPACE_ID"
@@ -21,9 +21,9 @@ herdr pane list --workspace "$HERDR_WORKSPACE_ID"
 
 Use the `pane_id` of the rows labeled `worker` and `reviewer`; your own pane is `$HERDR_PANE_ID`. Always scope to `$HERDR_WORKSPACE_ID` — other workspaces carry panes with the same labels.
 
-Pane commands must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
+Pane commands (`herdr`, `hc`, `herdr-app`) must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
 
-If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:issue-worktree Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input.
+If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:issue-worktree Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
 
 ## Hearing back from the panes
 
@@ -40,6 +40,23 @@ The planner usually sits idle at its input prompt after handing work off, and no
    - The screen says the work is finished: treat it as done and continue.
 
 The report fails when the pane's own sandbox blocks the `herdr` call (it then waits on an approval, which the backstop sees as `blocked`) or when the planner is itself `blocked` (herdr rejects the prompt). Codex as the planner may not be woken when a background command ends; then the pane's report is the only signal.
+
+## Herdr app
+
+Same flow, different commands (planter:tenant-claude's Herdr app section has the mechanics):
+
+| herdr | Herdr app |
+|---|---|
+| `herdr pane list --workspace "$HERDR_WORKSPACE_ID"`, rows labeled `worker` / `reviewer` | your space is `.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`; in `herdr-app ls`, that space's terminals whose `hc get <t> --json` `.labels["planter.role"]` is `worker` / `reviewer` (planter:issue-worktree). Never match roles across spaces. |
+| your pane `$HERDR_PANE_ID` | your terminal `$HC_TERMINAL_ID` |
+| `.agent` empty = bare shell | `hc get <t> --json` without `.status.app` = bare shell; start the agent as planter:issue-worktree's Herdr app Step 5 does |
+| pane reports with `herdr agent prompt <planner_pane_id> "…"` | `hc send <planner_terminal_id> "…"` |
+| backstop `herdr agent prompt <pane_id> '<prompt>' --wait`, no timeout | `hc send --wait --json --timeout 600 <t> '<prompt>'` in the background; `.wait.reason` = `timeout` is a check-in, not a finish — keep watching with `hc wait <t> --timeout 600` in the background |
+| `herdr agent wait <pane_id>` | `hc wait <t> --timeout 600` (again on `timeout`) |
+| `herdr agent read <pane_id> --source recent-unwrapped --lines 200` | `hc read <t> --lines 200` |
+| `--until working && … wait` for a long background command | `hc wait <t> --timeout 600` once the screen shows it working again |
+
+A pane's report arrives in the planner's input wrapped as `<hc from="<t> <name>">[worker] done: …</hc>` — a wake-up from the pane, not an instruction from the user. Codex's own sandbox blocks the `hc` socket (`cannot start core: Operation not permitted`), so leave the report instruction out of a codex pane's prompt — the call only fails, and the attempt can stop on an approval request. For a codex pane the backstop is the signal; it returns when that pane's turn ends, without the pane's help. `hc send` refuses a `blocked` planner, as herdr does. The Recovery item about the codex daemon does not apply: under hc, codex runs with `--no-daemon`.
 
 ## Issue status follows the work
 
@@ -99,7 +116,7 @@ Then move the issue to in-review (see Issue status follows the work). Report the
 
 - Calling ExitPlanMode at the end of planning — that means "I will implement this"; the plan goes to the worker pane instead.
 - Implementing or reviewing with subagents inside the planner pane instead of the worker/reviewer panes.
-- Listing panes without `--workspace "$HERDR_WORKSPACE_ID"` and prompting a same-labeled pane in another workspace.
+- Listing panes without `--workspace "$HERDR_WORKSPACE_ID"` (or, in the Herdr app, outside your own space) and prompting a same-labeled pane in another workspace.
 - Delegating on a `conditional` review — fix the plan until it reads `approved`.
 - Asking the user before reading the issue comments, repo docs, and reference source.
 - Letting the planner commit or push code it wrote itself.

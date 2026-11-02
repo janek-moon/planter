@@ -1,6 +1,6 @@
 ---
 name: tenant-claude
-description: Use when a task delegated to a tmux/cmux/herdr session, window, pane, or surface should run under the claude CLI — "run this with claude in a new split", "새 창에서 claude로 시켜줘", "다른 claude에게 맡겨줘" — the default planter runner when the user names no other tool
+description: Use when a task delegated to a tmux/cmux/herdr/Herdr app session, window, pane, or surface should run under the claude CLI — "run this with claude in a new split", "새 창에서 claude로 시켜줘", "다른 claude에게 맡겨줘" — the default planter runner when the user names no other tool
 ---
 
 # Running claude in a Delegated Session
@@ -53,6 +53,19 @@ herdr recognizes the agent and reports its state, so Steps 1–3 collapse into a
    - `blocked` — a permission request or question dialog. Read it and report; do not send keys.
    - `idle` / `done` — read the result: `herdr agent read <name> --source recent-unwrapped --lines 200`. A follow-up question also settles as `idle`; if the response ends in a question, report it instead of declaring done.
    - error `agent_prompt_stalled` (no state change within 5 s) or `timeout` — read the pane and report interim status.
+
+## Herdr app
+
+`hc` also recognizes the agent and reports its state, so the same collapse applies.
+
+1. **Launch or reuse.** If `hc get <t> --json` shows `.status.app` = `claude-code`, reuse it. Otherwise launch it in a new split (Create in planter:tenant Step 2), passing the program as `argv` through a login shell so `PATH` and the user's shell setup load — a bare program name fails with `spawn_failed`, and `sh -c` misses `PATH` too:
+   `"argv": ["<$SHELL>", "-lic", "<env>claude <flags>; exec \"$SHELL\" -l"]` — build the whole `terminal.open` JSON with a JSON encoder, not by hand.
+   `<env>` is `CLAUDE_CONFIG_DIR=<value> ` when your own environment sets it (a new terminal does not inherit yours; quote the value with `printf %q`). `exec "$SHELL" -l` leaves a shell behind when claude exits, as a herdr pane does. Then `hc wait <t> --timeout 60` — it returns `idle` once claude is ready for input; confirm with `hc get <t> --json` that `.status.app` is `claude-code`, since a shell that has not started claude yet carries no app. A terminal the user already has at a shell prompt: `hc send <t> '<env>claude <flags>'`, then the same wait — but never type into a shell that was just opened: its startup files may still be loading, and the Enter then lands on claude's trust dialog and picks "No, exit". If the wait ends on anything but `idle`, read the screen (`hc read <t> --lines 50`) — usually a trust/permission dialog — and report it; do not answer it.
+2. **Inject and wait.** `hc send --wait --timeout 600 --json <t> '<prompt>'`. Multi-line prompts go in as one paste, so no buffer workaround. The agent sees the prompt wrapped as `<hc from="<your id>">…</hc>`.
+3. **Branch on `.wait.status`:**
+   - `blocked` — a permission request or question dialog. Read it and report; do not send keys, and do not retry with `--force`.
+   - `idle` / `done` — read the result: `hc read <t> --lines 200`. A follow-up question also settles; if the response ends in a question, report it instead of declaring done.
+   - `.started` is `false` — the prompt did not land; read the screen before sending again (it may still have arrived). `.wait.reason` = `timeout` — read the pane, report interim status, then `hc wait <t> --timeout 600`. A wait on a terminal that is already idle or done returns at once, so waiting again cannot miss a turn that ended in between.
 
 ## Common Mistakes
 

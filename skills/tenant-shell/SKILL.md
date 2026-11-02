@@ -1,6 +1,6 @@
 ---
 name: tenant-shell
-description: Use when a task delegated to a tmux/cmux/herdr session, window, pane, or surface is a plain shell command — "npm test를 옆 패널에서 돌려줘", "run this command in another split" — or the user asks for a plain shell instead of an AI agent in the target session
+description: Use when a task delegated to a tmux/cmux/herdr/Herdr app session, window, pane, or surface is a plain shell command — "npm test를 옆 패널에서 돌려줘", "run this command in another split" — or the user asks for a plain shell instead of an AI agent in the target session
 ---
 
 # Running a Shell Command in a Delegated Session
@@ -28,6 +28,7 @@ Send it literally, then Enter as a separate event:
 - tmux: `tmux send-keys -t <target> -l '<wrapped command>'` then `tmux send-keys -t <target> Enter`
 - cmux: `cmux send --surface <ref> '<wrapped command>'` then `cmux send-key --surface <ref> enter`
 - herdr: `herdr pane run <pane_id> '<wrapped command>'` — sends text and Enter atomically, so no separate Enter
+- Herdr app: see the Herdr app section below — it uses a different wrapper
 
 The payload for `cmux send` must stay single-line with no `\n`/`\r`/`\t` two-character escape sequences — cmux interprets those as Enter/Tab keys and would submit mid-string.
 
@@ -52,6 +53,16 @@ herdr pane wait-output <pane_id> --regex '(?m)^PLANTER_(DONE|FAIL)_<id>$' --sour
 herdr blocks until the match instead of polling; `.result.matched_line` says DONE or FAIL and `.result.read.text` carries the output. On `timeout`, report interim status and wait again.
 
 **Anchor the match to the whole line.** The typed command itself also contains the sentinel text; only the echoed result appears alone on its own line. `-J` joins wrapped lines, so a wrapped fragment of the long typed command cannot start a physical line and false-match.
+
+## Herdr app
+
+A new target is a shell split from planter:tenant Step 2 (no `argv`). Either way, Step 1 checks the prompt first with `hc read <t> --lines 20` — a just-opened shell may still be loading its startup files; read again until the prompt shows. Then use a sentinel. `hc wait --output` matches a plain substring anywhere, not a whole line, so the typed command must not contain the text it waits for — split the literal with an empty quote pair:
+
+```
+<command>; echo "PLANTER_END_""<id>=$?"
+```
+
+Start the wait first, in the background, because it only sees output printed after it starts: `hc wait <t> --output 'PLANTER_END_<id>=' --timeout 600`. Then `hc send <t> '<wrapped command>'` (text and Enter in one call). When the wait returns `reason: output`, read the result line `PLANTER_END_<id>=<code>` from `hc read <t> --lines 200` — `0` is DONE, anything else FAIL. On `reason: timeout`, report interim status and wait again.
 
 ## Step 4: Report
 
