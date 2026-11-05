@@ -41,7 +41,7 @@ codex plugin add planter@planter
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
 | `planter:issue-worktree` | herdr·Herdr 앱 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄움 |
-| `planter:issue-to-pr` | herdr·Herdr 앱 전용, planner pane에서: 이슈를 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. 그 사이 이슈 상태도 단계에 맞게 옮깁니다. planner는 코드를 쓰지 않습니다 |
+| `planter:issue-to-pr` | herdr·Herdr 앱 전용, planner pane에서: 이슈가 아직 필요한지 reviewer pane과 확인하고, 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. 그 사이 이슈 상태도 단계에 맞게 옮깁니다. planner는 코드를 쓰지 않습니다 |
 
 ## 사용법
 
@@ -56,7 +56,7 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 - "ABC-123 작업 시작해줘, reviewer는 claude effort high로" — pane 하나의 기본 에이전트를 바꿉니다
 - "이슈 만들고 거기서 작업 시작할 자리 만들어줘"
 - "이슈는 됐고 worktree만 열어줘"
-- "ABC-123 끝까지 진행해줘" — planner pane에서: 계획, reviewer pane 승인, worker pane 구현, 2중 diff 리뷰, PR
+- "ABC-123 끝까지 진행해줘" — planner pane에서: 필요성 확인, 계획, reviewer pane 승인, worker pane 구현, 2중 diff 리뷰, PR
 
 ## 동작 방식
 
@@ -76,14 +76,15 @@ Claude Code나 Codex에게 이렇게 요청하면 됩니다:
 
 ### 이슈를 PR까지 끌고 가기 (herdr·Herdr 앱 전용)
 
-1. **분석** — 이슈 본문·부모·연결 이슈·댓글을 읽고, 검증 명령·커밋 규칙·리뷰 계약·PR 형식은 저장소 문서에서 가져옵니다.
-2. **계획** — 모호한 점은 먼저 근거(저장소 문서, 문서가 가리키는 참조 구현)에서 찾고, 번호 붙은 검증 항목이 있는 계획 파일을 저장소 밖에 씁니다.
-3. **게이트** — reviewer pane이 `approved`라고 답해야 위임합니다. `conditional`이면 계획을 고쳐 다시 보냅니다.
-4. **위임** — worker pane이 구현하고 커밋합니다. 이후 수정 라운드도 전부 worker pane으로 가며, planner pane 안의 서브에이전트로 대신하지 않습니다.
-5. **리뷰** — reviewer pane은 항상, CodeRabbit CLI는 설치돼 있을 때만 기준 브랜치 대비 리뷰합니다. planner가 분류하고 worker가 고치고, 돌렸던 리뷰가 모두 통과할 때까지 다시 돌립니다.
-6. **PR** — push 하고 저장소 형식에 맞춰 기준 브랜치 대상 PR을 엽니다.
+1. **확인** — 이슈 본문·부모·연결 이슈·댓글을 최신 기준 브랜치의 코드·이력·PR과 비교해 아직 필요한 작업인지 봅니다. reviewer pane도 따로 확인합니다. 둘 다 `proceed`면 계속하고, 둘 다 `stop`이면 근거와 함께 멈추고, 한 번 더 주고받아도 의견이 다르면 사용자에게 묻습니다.
+2. **분석** — 고칠 코드를 찾고, 검증 명령·커밋 규칙·리뷰 계약·PR 형식은 저장소 문서에서 가져옵니다.
+3. **계획** — 모호한 점은 먼저 근거(저장소 문서, 문서가 가리키는 참조 구현)에서 찾고, 번호 붙은 검증 항목이 있는 계획 파일을 저장소 밖에 씁니다.
+4. **게이트** — reviewer pane이 `approved`라고 답해야 위임합니다. `conditional`이면 계획을 고쳐 다시 보냅니다.
+5. **위임** — worker pane이 구현하고 커밋합니다. 이후 수정 라운드도 전부 worker pane으로 가며, planner pane 안의 서브에이전트로 대신하지 않습니다.
+6. **리뷰** — reviewer pane은 항상, CodeRabbit CLI는 설치돼 있을 때만 기준 브랜치 대비 리뷰합니다. planner가 분류하고 worker가 고치고, 돌렸던 리뷰가 모두 통과할 때까지 다시 돌립니다.
+7. **PR** — push 하고 저장소 형식에 맞춰 기준 브랜치 대상 PR을 엽니다.
 
-이슈가 있는 작업이면 이슈 상태도 함께 옮깁니다. 분석을 시작할 때 진행 중으로, PR을 연 뒤 리뷰 중으로 — 프로젝트에 실제로 있는 전환 중 맞는 것을 고릅니다. 전환이 없거나 실패하면 알리고 흐름은 계속합니다.
+이슈가 있는 작업이면 이슈 상태도 함께 옮깁니다. 확인 결과가 `proceed`면 진행 중으로, PR을 연 뒤 리뷰 중으로 — 프로젝트에 실제로 있는 전환 중 맞는 것을 고릅니다. 전환이 없거나 실패하면 알리고 흐름은 계속합니다.
 
 worker·reviewer pane에 일을 넘길 때마다, 끝나거나 질문이 생기면 planner pane에 메시지를 보내라고 함께 지시합니다. 그래서 입력 대기 중인 planner가 스스로 깨어납니다. planner는 넘긴 일을 백그라운드로 지켜보기도 해서, 알림 없이 멈춘 pane(승인 대기, 또는 자기 백그라운드 명령이 아직 도는 채로 idle)을 잡아 알립니다.
 

@@ -41,7 +41,7 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 | `planter:issue-worktree` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
-| `planter:issue-to-pr` | herdr or Herdr app only, from the planner pane: analyzes the issue, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:issue-to-pr` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
 
 ## Usage
 
@@ -56,7 +56,7 @@ Just ask Claude Code or Codex:
 - "File an issue for this and open a worktree for it"
 - "Open a worktree for this, no issue needed"
 - "Start ABC-123, reviewer as claude effort high" — overrides one pane's default agent
-- "Take ABC-123 all the way to a PR" — from the planner pane: plan, reviewer-pane approval, worker-pane implementation, two-source diff review, PR
+- "Take ABC-123 all the way to a PR" — from the planner pane: need check, plan, reviewer-pane approval, worker-pane implementation, two-source diff review, PR
 
 ## How it works
 
@@ -76,14 +76,15 @@ Just ask Claude Code or Codex:
 
 ### Driving an issue to a PR (herdr or Herdr app only)
 
-1. **Analyze** — issue body, parent, links, and comments; the repo's own verification command, commit rules, review contract, and PR format from its docs.
-2. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
-3. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
-4. **Delegate** — the worker pane implements and commits; every later fix round goes there too, never to a subagent inside the planner pane.
-5. **Review** — reviewer pane always, plus the CodeRabbit CLI only when it is installed, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
-6. **PR** — pushed and opened against the base branch in the repo's format.
+1. **Check** — issue body, parent, links, and comments are compared against the latest base branch (code, history, PRs) to see whether the work is still needed. The reviewer pane checks independently; both agreeing `proceed` continues, both agreeing `stop` ends the run with the evidence, and a disagreement that one more exchange does not settle goes to you.
+2. **Analyze** — the code to change; the repo's own verification command, commit rules, review contract, and PR format from its docs.
+3. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
+4. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
+5. **Delegate** — the worker pane implements and commits; every later fix round goes there too, never to a subagent inside the planner pane.
+6. **Review** — reviewer pane always, plus the CodeRabbit CLI only when it is installed, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
+7. **PR** — pushed and opened against the base branch in the repo's format.
 
-When the work has an issue, its status moves with it: to in-progress when analysis starts, to in-review once the PR is open — whichever of the project's own transitions match. A failed or missing transition is reported, never blocking.
+When the work has an issue, its status moves with it: to in-progress once the check says `proceed`, to in-review once the PR is open — whichever of the project's own transitions match. A failed or missing transition is reported, never blocking.
 
 Every hand-off asks the worker or reviewer pane to message the planner pane when it finishes or has a question, so an idle planner wakes up on its own. The planner also watches each hand-off in the background: a pane that goes quiet without reporting — waiting on an approval, or idle while its own background command still runs — is caught and reported.
 
@@ -119,7 +120,8 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [ ] Herdr app: issue-to-pr end to end
 - [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] issue-worktree: base fetched before create, reuse path rebased, default agents started with their effort, per-pane override
-- [ ] issue-to-pr: issue moved to in-progress at analysis and in-review after the PR
+- [ ] issue-to-pr: stale issue stopped by planner and reviewer-pane agreement with its status untouched; disagreement goes to the user
+- [ ] issue-to-pr: issue moved to in-progress after the `proceed` verdict and in-review after the PR
 - [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
 - [ ] issue-to-pr: plan gated by the reviewer pane, implementation landed from the worker pane, PR opened
