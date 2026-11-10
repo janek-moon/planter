@@ -1,5 +1,5 @@
 ---
-name: issue-worktree
+name: workshop
 description: Use when a task needs its own place to live — from an issue or not — "ABC-123 작업 시작해줘", "이 이슈로 worktree 열어줘", "이슈 만들고 브랜치 파줘", "이슈 없이 worktree만 열어줘", "start work on ABC-123", "open a worktree for this" — takes a Jira/Linear issue key, files one, or works without any issue, then opens a git worktree in a new herdr workspace or Herdr app space named after the work
 ---
 

@@ -40,7 +40,7 @@ codex plugin add planter@planter
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
-| `planter:issue-worktree` | herdr·Herdr 앱 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄움 |
+| `planter:workshop` | herdr·Herdr 앱 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄움 |
 | `planter:collab` | herdr·Herdr 앱 전용, planner pane에서: 이슈가 아직 필요한지 reviewer pane과 확인하고, 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고, reviewer pane 지적(설치돼 있으면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. 그 사이 이슈 상태도 단계에 맞게 옮깁니다. planner는 코드를 쓰지 않습니다 |
 | `planter:sweep` | herdr·Herdr 앱 전용, 끝난 작업의 planner pane에서: 후속 이슈와 스펙 수정을 마무리하고, 그 작업에 속한 Docker 컨테이너, 시뮬레이터, 워크트리, 브랜치를 지운 뒤 마지막에 workspace를 닫습니다 |
 
@@ -102,8 +102,8 @@ worker·reviewer pane에 일을 넘길 때마다, 끝나거나 질문이 생기�
 - tmux, cmux, herdr, Herdr 데스크탑 앱(`hc`, `herdr-app`이 PATH에 있어야 함) 중 하나 이상
 - git 2.13 이상 — 스킬이 `git worktree`와 `git branch --format`을 씁니다
 - 플러그인을 지원하는 Claude Code 또는 Codex, 해당 러너를 쓰려면 PATH에 `claude` / `codex` CLI
-- `planter:issue-worktree`의 "이슈를 만들지, 없이 갈지" 질문은 클릭으로 답하는 대화상자로 뜹니다(Claude Code는 AskUserQuestion, Codex는 `request_user_input`). Codex는 Plan 모드에서, 또는 Default 모드에서 `default_mode_request_user_input` 기능을 켜면 대화상자로 보여 주고, 아니면 글로 묻습니다
-- `planter:issue-worktree`를 쓰려면 herdr 또는 Herdr 앱, 그리고 git 저장소. 이슈에서 시작할 때는 연결된 Jira 또는 Linear MCP도 필요합니다
+- `planter:workshop`의 "이슈를 만들지, 없이 갈지" 질문은 클릭으로 답하는 대화상자로 뜹니다(Claude Code는 AskUserQuestion, Codex는 `request_user_input`). Codex는 Plan 모드에서, 또는 Default 모드에서 `default_mode_request_user_input` 기능을 켜면 대화상자로 보여 주고, 아니면 글로 묻습니다
+- `planter:workshop`를 쓰려면 herdr 또는 Herdr 앱, 그리고 git 저장소. 이슈에서 시작할 때는 연결된 Jira 또는 Linear MCP도 필요합니다
 - `planter:collab`을 쓰려면 planner/worker/reviewer pane이 있는 herdr 이슈 workspace(또는 Herdr 앱 스페이스), 트래커 MCP, `gh`. CodeRabbit CLI(`coderabbit`)는 선택입니다
 
 ## 기여하기
