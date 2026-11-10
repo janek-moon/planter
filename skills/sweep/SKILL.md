@@ -49,7 +49,7 @@ Do this before anything is removed or switched.
 
 ## Step 4: One confirmation
 
-Show the removal list and the follow-ups, including the full read-back that planter:issue-worktree's **Filing issues** requires. Remove and file only after the user confirms.
+Show the removal list and the follow-ups, including the full read-back that planter:workshop's **Filing issues** requires. Remove and file only after the user confirms.
 
 Without a PR, when Step 2 listed anything, show those commits and files first with a plain warning: this work is not on the base branch, and once swept nothing tracks it anymore. Say whether the commits are also on `origin`; the sweep never deletes a remote branch. The user must confirm this warning specifically. If they decline, the sweep ends after Step 6 with the worktree, branch, and workspace in place.
 
@@ -63,7 +63,7 @@ Without a PR, when the user confirmed the Step 4 warning, it listed modified or 
 
 ## Step 6: Finish the follow-ups
 
-- **Issues:** planter:issue-worktree's **Filing issues**.
+- **Issues:** planter:workshop's **Filing issues**.
 - **Specs:** where the repo's rules (`AGENTS.md`, `CLAUDE.md`) say they live: this repo, another repo, Notion, Confluence, Obsidian. No rule: ask.
 - **A spec in this repo, with tracked changes still in the checkout:** STOP and ask where to make the edit. Switching branches here could disturb what the user kept.
 - **A spec in this repo:** the worker pane branches from the fresh `origin/<base>` in this checkout, edits, and commits. The reviewer pane reviews the diff as in planter:collab Step 7. The planner opens the PR. Continue once `gh pr view` shows the PR and its `headRefOid` equals the local HEAD, and record that branch and commit id in the plan file.

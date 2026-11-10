@@ -7,7 +7,7 @@ description: Use when running in a herdr or Herdr app planner pane and asked to 
 
 ## Overview
 
-A herdr issue workspace or Herdr app space (see planter:issue-worktree) has three panes: `planner`, `worker`, `reviewer`. This skill is what the planner does in it. The planner reads the issue, writes the plan, gets it reviewed, delegates the implementation, triages review findings, and opens the PR. **The planner never writes product code.** Implementation goes to the worker pane; review goes to the reviewer pane; both are visible to the user, which is the point.
+A herdr issue workspace or Herdr app space (see planter:workshop) has three panes: `planner`, `worker`, `reviewer`. This skill is what the planner does in it. The planner reads the issue, writes the plan, gets it reviewed, delegates the implementation, triages review findings, and opens the PR. **The planner never writes product code.** Implementation goes to the worker pane; review goes to the reviewer pane; both are visible to the user, which is the point.
 
 **REQUIRED BACKGROUND:** planter:tenant-claude (herdr section) for `herdr agent prompt/wait/read` mechanics. This skill only adds what is specific to the three-pane flow. The commands below are herdr's; in the Herdr app, swap them as the **Herdr app** section says.
 
@@ -23,7 +23,7 @@ Use the `pane_id` of the rows labeled `worker` and `reviewer`; your own pane is 
 
 Pane commands (`herdr`, `hc`, `herdr-app`) must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
 
-If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:issue-worktree Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
+If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:workshop Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
 
 ## Hearing back from the panes
 
@@ -47,9 +47,9 @@ Same flow, different commands (planter:tenant-claude's Herdr app section has the
 
 | herdr | Herdr app |
 |---|---|
-| `herdr pane list --workspace "$HERDR_WORKSPACE_ID"`, rows labeled `worker` / `reviewer` | your space is `.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`; in `herdr-app ls`, that space's terminals whose `hc get <t> --json` `.labels["planter.role"]` is `worker` / `reviewer` (planter:issue-worktree). Never match roles across spaces. |
+| `herdr pane list --workspace "$HERDR_WORKSPACE_ID"`, rows labeled `worker` / `reviewer` | your space is `.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`; in `herdr-app ls`, that space's terminals whose `hc get <t> --json` `.labels["planter.role"]` is `worker` / `reviewer` (planter:workshop). Never match roles across spaces. |
 | your pane `$HERDR_PANE_ID` | your terminal `$HC_TERMINAL_ID` |
-| `.agent` empty = bare shell | `hc get <t> --json` without `.status.app` = bare shell; start the agent as planter:issue-worktree's Herdr app Step 5 does |
+| `.agent` empty = bare shell | `hc get <t> --json` without `.status.app` = bare shell; start the agent as planter:workshop's Herdr app Step 5 does |
 | pane reports with `herdr agent prompt <planner_pane_id> "…"` | `hc send <planner_terminal_id> "…"` |
 | backstop `herdr agent prompt <pane_id> '<prompt>' --wait`, no timeout | `hc send --wait --json --timeout 600 <t> '<prompt>'` in the background; `.wait.reason` = `timeout` is a check-in, not a finish — keep watching with `hc wait <t> --timeout 600` in the background |
 | `herdr agent wait <pane_id>` | `hc wait <t> --timeout 600` (again on `timeout`) |
@@ -60,7 +60,7 @@ A pane's report arrives in the planner's input wrapped as `<hc from="<t> <name>"
 
 ## Issue status follows the work
 
-Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call. Both trackers connected and both return the key: ask which one this work belongs to before reading or moving anything, as planter:issue-worktree Step 1 does.
+Only when the work has an issue: the key from the request, or from the branch name (`<type>/<KEY>-<slug>`). No key — skip this and every other tracker call. Both trackers connected and both return the key: ask which one this work belongs to before reading or moving anything, as planter:workshop Step 1 does.
 
 Move the issue at two points: to the project's in-progress state once Step 1 settles on `proceed`, and to its review state once the PR from Step 8 is open. State names differ per project, so list the transitions the issue actually offers (Jira: `getTransitionsForJiraIssue`, then `transitionJiraIssue`; Linear: the team's workflow states) and pick the one that means in progress / in review. Already at or past that state: leave it. Nothing matches, or the call fails: say so and keep going — the tracker never blocks the flow. Never move an issue to done; merging decides that.
 
@@ -119,13 +119,13 @@ The planner triages every finding as real, false positive, or real but out of sc
 
 ## Step 8: Open the PR
 
-Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If planter:issue-worktree rebased a branch that was already on origin, the plain push is rejected as non-fast-forward: push with `git push --force-with-lease`, never plain `--force`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
+Push the branch and open the PR against the base branch, following the repo's title format and PR template. planter does not own PR creation; use the repo's or your own PR skill if one exists, otherwise `gh pr create`. If planter:workshop rebased a branch that was already on origin, the plain push is rejected as non-fast-forward: push with `git push --force-with-lease`, never plain `--force`. If push or `gh` fails with a permission or "repository not found" error, that is the user's account setup — report it, do not switch accounts.
 
 Then move the issue to in-review (see Issue status follows the work). Report the PR URL and the status transitions made (or skipped, and why).
 
 ## Recovery
 
-- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit` and read the pane until a shell prompt shows (nothing within 30 s: STOP and report), then `herdr pane run <pane_id> "cd <checkout_path> && codex -c model_reasoning_effort=<effort>"` (the reviewer effort from planter:issue-worktree Step 5 — medium unless the user named another), choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
+- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit` and read the pane until a shell prompt shows (nothing within 30 s: STOP and report), then `herdr pane run <pane_id> "cd <checkout_path> && codex -c model_reasoning_effort=<effort>"` (the reviewer effort from planter:workshop Step 5 — medium unless the user named another), choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
 - Before injecting, read the pane (`--source visible --lines 20`). If the user is mid-typing there, wait.
 
 ## Common Mistakes
