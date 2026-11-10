@@ -1,5 +1,5 @@
 ---
-name: issue-to-pr
+name: collab
 description: Use when running in a herdr or Herdr app planner pane and asked to carry an issue through to a pull request — "ABC-123 끝까지 진행해줘", "이슈 분석해서 구현 계획 작성해", "reviewer pane 에 계획/diff 리뷰 받아", "worker pane 에 구현 위임해", "coderabbit 리뷰 후 PR 생성", "plan this issue and hand it to the worker pane", "get the reviewer pane to review this" — the planner analyzes, plans, and gates; the worker and reviewer panes do the implementing and reviewing
 ---
 
@@ -101,7 +101,7 @@ Prompt the reviewer pane with the plan file path, the verification item numbers,
 
 ## Step 6: Delegate implementation to the worker pane
 
-Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 2 (verification command, commit rules). The worker commits; the planner does not. Hear back as in Hearing back from the panes.
+Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 2 (verification command, commit rules). The worker commits; the planner does not. Tell the worker that anything it newly creates for this work and leaves running or stored outside the checkout (a simulator, a container started by hand) goes in the plan file's `Resources` section with its exact id; without that record, planter:sweep leaves it alone (Compose projects started from this checkout are the one thing it finds by itself). Hear back as in Hearing back from the panes.
 
 Every later round of implementation — review fixes, rework — also goes to the worker pane. Do not route it to an executor subagent inside the planner pane: the user cannot see that work.
 
@@ -115,7 +115,7 @@ Every later round of implementation — review fixes, rework — also goes to th
    ```
    Not installed or not authenticated: say so and continue with the reviewer pane alone — never block on it.
 
-The planner triages every finding as real or false positive, sends the real ones to the worker pane, then **re-runs every review that ran**. Loop until all of them pass.
+The planner triages every finding as real, false positive, or real but out of scope. Real ones go to the worker pane; out-of-scope ones go in the plan file's `Follow-ups` section with the reason, for planter:sweep to finish after the merge. Then **re-run every review that ran**. Loop until all of them pass.
 
 ## Step 8: Open the PR
 
