@@ -7,7 +7,7 @@ description: Use when a task needs its own place to live — from an issue or no
 
 ## Overview
 
-Turn a piece of work into a place to do it: resolve the issue, file one, or skip the tracker entirely, then open a git worktree on a conventionally named branch and label the herdr workspace with the work, and start an idle agent in each of its three panes. It stops there — prompting those agents is planter:issue-to-pr's or planter:tenant's job.
+Turn a piece of work into a place to do it: resolve the issue, file one, or skip the tracker entirely, then open a git worktree on a conventionally named branch and label the herdr workspace with the work, and start an idle agent in each of its three panes. It stops there — prompting those agents is planter:collab's or planter:tenant's job.
 
 ## Step 0: herdr or the Herdr app only
 
@@ -20,10 +20,43 @@ Requires `$HERDR_ENV` = `1` (herdr) or `$HC_TERMINAL_ID` set with `herdr-app sta
 **No key**: ask which of the two the user wants as a choice dialog — AskUserQuestion in Claude Code, `request_user_input` in Codex — whenever that tool is available this turn, otherwise in plain prose. Ask even when the user already said which — this is the last point before a tracker gets touched, and answering is one click or one word. Offer "File an issue" only when a tracker MCP is actually connected; when none is, say so and continue without an issue.
 
 The two options:
-- **File an issue** — ask for the title and the destination (Linear team / Jira project), read back what you are about to file (type, title, destination, assignee: yourself), and create it only after the user confirms. Continue with the key it returns.
+- **File an issue** — ask what the work is and the destination (Linear team / Jira project), then follow **Filing issues** below. Continue with the key of the issue this workspace will carry.
 - **No issue** — do not touch a tracker at all. Ask for the work in a sentence, and carry that instead of an issue.
 
 Keep from the issue: key, title, type, URL. Working without one, keep just that sentence.
+
+## Filing issues
+
+Every issue planter files follows this section, here and in planter:sweep.
+
+**Shape by size.** An epic is the work as a whole, a story is a use case, a task is one detailed feature.
+
+| The work is | File |
+|---|---|
+| one detailed feature | a task |
+| one use case with several features | a story and its tasks |
+| several use cases | an epic, its stories, and their tasks |
+
+**Map to the tracker.**
+
+| Level | Linear | Jira |
+|---|---|---|
+| Epic | Project | Epic |
+| Story | Issue | Story |
+| Task under a story | Sub-issue (`parentId`) | Sub-task, with `parent` |
+| Task on its own | Issue | Task |
+
+Jira: read the project's real types first (`getJiraProjectIssueTypesMetadata`), because names and levels differ per project. When the project cannot express the hierarchy (a type is missing, or the type takes no parent), tell the user and ask.
+
+**What goes in an issue.** These apply to every field you write: description, comments, and Linear's "Agent notes".
+- Epic: the purpose and the scope.
+- Story: what the user can do once it is done.
+- Task: the capability needed and its completion criteria.
+- To identify a problem, also include what was observed: reproduction steps, the error and where it appeared, an external contract the work must meet.
+
+An issue describes the work needed and stops there. How to build it — files to change, function design, code, library choices, implementation order — is analyzed in the workspace that does the work (planter:collab Step 4). This overrides the Linear MCP's advice to keep implementation plans in "Agent notes".
+
+**Confirm, then create.** Read back the whole tree: each issue's type, title, and body, the destination, assignee yourself. In the same read-back, settle which single issue this workspace carries; its key names the branch and label. Create only after the user confirms. Create parents first and link children by the returned keys. If a create fails partway, report the keys already made and reuse them on retry, so nothing is filed twice.
 
 ## Step 2: Derive the names
 
@@ -100,7 +133,7 @@ The user can override kind and effort per pane in the request ("reviewer는 clau
 
 Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into. If the user named a kind or effort for a pane that already runs an agent, say that the running one was kept and ask whether to restart it — never stop it yourself.
 
-The agents run under the same profile as the session running this skill. A pane's shell does not inherit the caller's environment, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into every pane you start, whatever its kind — the planner needs the reviewer's profile too, to restart it later (planter:issue-to-pr Step 0). Let `printf %q` quote the value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither variable set: nothing to export. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
+The agents run under the same profile as the session running this skill. A pane's shell does not inherit the caller's environment, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into every pane you start, whatever its kind — the planner needs the reviewer's profile too, to restart it later (planter:collab Step 0). Let `printf %q` quote the value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither variable set: nothing to export. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
 
 ```
 herdr agent start <role>-<workspace_id lowercased> --kind <kind> --pane <pane_id> -- <flags>
@@ -146,7 +179,7 @@ After each start, `hc wait <t> --timeout 60` returns `idle` once the agent is re
 
 ## Step 6: Report
 
-Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:issue-to-pr in the planner pane, or hands a task over through planter:tenant.
+Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:collab in the planner pane, or hands a task over through planter:tenant.
 
 ## Common Mistakes
 

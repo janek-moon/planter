@@ -41,7 +41,8 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 | `planter:issue-worktree` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
-| `planter:issue-to-pr` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:collab` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:sweep` | herdr or Herdr app only, from the planner pane of finished work: finishes follow-up issues and spec edits, removes the Docker containers, simulators, worktree, and branch that belong to the work, and closes the workspace last |
 
 ## Usage
 
@@ -103,7 +104,7 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - Claude Code or Codex with plugin support; `claude` / `codex` CLIs on PATH for those runners
 - The issue-or-not choice in `planter:issue-worktree` is a click-to-answer dialog (AskUserQuestion in Claude Code, `request_user_input` in Codex). Codex shows it in Plan mode, or in Default mode once the `default_mode_request_user_input` feature is enabled; otherwise it asks in plain text
 - For `planter:issue-worktree`: herdr or the Herdr app, and a git repo — plus a Jira or Linear MCP when the work comes from an issue
-- For `planter:issue-to-pr`: a herdr issue workspace (or Herdr app space) with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
+- For `planter:collab`: a herdr issue workspace (or Herdr app space) with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
 
 ## Manual verification checklist
 
@@ -117,14 +118,20 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
 - [x] Herdr app: `terminal.open` splits the caller's pane right/down with focus given back, shell sentinel via `hc wait --output`, claude and `codex --no-daemon` launched through a login shell, multi-line `hc send --wait`, pane report via `hc send`
 - [x] Herdr app: issue-worktree opens a `git worktree` space with planner top left, worker below, reviewer on the right, roles marked by `planter.role` labels
-- [ ] Herdr app: issue-to-pr end to end
+- [ ] Herdr app: collab end to end
 - [x] issue-worktree: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] issue-worktree: base fetched before create, reuse path rebased, default agents started with their effort, per-pane override
-- [ ] issue-to-pr: stale issue stopped by planner and reviewer-pane agreement with its status untouched; disagreement goes to the user
-- [ ] issue-to-pr: issue moved to in-progress after the `proceed` verdict and in-review after the PR
+- [ ] collab: stale issue stopped by planner and reviewer-pane agreement with its status untouched; disagreement goes to the user
+- [ ] collab: issue moved to in-progress after the `proceed` verdict and in-review after the PR
 - [ ] issue-worktree: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
-- [ ] issue-to-pr: plan gated by the reviewer pane, implementation landed from the worker pane, PR opened
+- [ ] collab: plan gated by the reviewer pane, implementation landed from the worker pane, PR opened
+- [ ] issue-worktree: epic, story, and task tree filed on Linear and Jira with no implementation detail
+- [ ] sweep: stops on an open PR or unpushed commit, keeps a closed PR's branch, removes a squash-merged worktree and branch
+- [ ] sweep: without a PR, warns about commits and changes the base branch lacks, and removes them only after that warning is confirmed
+- [x] sweep: `git worktree remove` from the main checkout leaves a Claude planner able to keep running commands
+- [x] sweep: Herdr app `space.close` from inside the space ends the space and its terminals
+- [ ] sweep: `herdr workspace close` from inside the workspace
 
 ## License
 
