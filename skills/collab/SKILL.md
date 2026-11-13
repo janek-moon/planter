@@ -23,7 +23,7 @@ Use the `pane_id` of the rows labeled `worker` and `reviewer`; your own pane is 
 
 Pane commands (`herdr`, `hc`, `herdr-app`) must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
 
-If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, effort, and profile from planter:workshop Step 5 (worker claude medium, reviewer codex medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
+If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, model, effort, and profile from planter:workshop Step 5 (worker claude `opus` medium, reviewer codex newest Sol medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
 
 ## Hearing back from the panes
 
@@ -125,7 +125,7 @@ Then move the issue to in-review (see Issue status follows the work). Report the
 
 ## Recovery
 
-- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit` and read the pane until a shell prompt shows (nothing within 30 s: STOP and report), then `herdr pane run <pane_id> "cd <checkout_path> && codex -c model_reasoning_effort=<effort>"` (the reviewer effort from planter:workshop Step 5 — medium unless the user named another), choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
+- Codex in the reviewer pane ends `agent prompt` with `agent_prompt_stalled` and the screen shows an empty input box: Codex refused the turn with `invalid cwd` because its background daemon still holds a path from before the worktree was recreated. Send `/quit` and read the pane until a shell prompt shows (nothing within 30 s: STOP and report), then `herdr pane run <pane_id> "cd <checkout_path> && codex -m <model> -c model_reasoning_effort=<effort>"` (the reviewer model and effort from planter:workshop Step 5 — newest Sol and medium unless the user named others), choose "Run without daemon this time" on the daemon dialog, and resend the prompt.
 - Before injecting, read the pane (`--source visible --lines 20`). If the user is mid-typing there, wait.
 
 ## Common Mistakes

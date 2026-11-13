@@ -73,7 +73,7 @@ Just ask Claude Code or Codex:
 2. **Name** — the branch follows the repo's own recent branches (prefix, key casing, slug or none); the base comes from `origin/HEAD`, not a hardcoded `main`.
 3. **Open** — `git fetch origin` first so the base is current, then one `herdr worktree create` makes the checkout, the workspace, and its label; an existing worktree is reopened instead of duplicated (in the Herdr app, `git worktree add` makes the checkout under the same `~/.herdr/worktrees/` path and `herdr-app` opens a space for it), and a branch that already existed is rebased onto the fresh base (a busy agent, a dirty tree, or a conflict stops the run; a branch already on origin is rebased only after you agree).
 4. **Lay out** — planner, worker, and reviewer panes, all in the checkout.
-5. **Start** — an idle agent in each: planner claude effort high, worker claude effort medium, reviewer codex effort medium. Name a different kind or effort per pane in the request to override ("reviewer as claude, high"). The agents inherit the caller's profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
+5. **Start** — an idle agent in each: planner claude Opus effort high, worker claude Opus effort medium, reviewer codex with the newest Sol model effort medium. Name a different kind, model, or effort per pane in the request to override ("reviewer as claude, high", "worker on sonnet"). The agents inherit the caller's profile (`CLAUDE_CONFIG_DIR`, `CODEX_HOME`).
 
 ### Driving an issue to a PR (herdr or Herdr app only)
 
@@ -120,7 +120,7 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [x] Herdr app: workshop opens a `git worktree` space with planner top left, worker below, reviewer on the right, roles marked by `planter.role` labels
 - [ ] Herdr app: collab end to end
 - [x] workshop: worktree workspace opens with planner/worker/reviewer panes in the checkout
-- [ ] workshop: base fetched before create, reuse path rebased, default agents started with their effort, per-pane override
+- [ ] workshop: base fetched before create, reuse path rebased, default agents started with their model and effort, per-pane override
 - [ ] collab: stale issue stopped by planner and reviewer-pane agreement with its status untouched; disagreement goes to the user
 - [ ] collab: issue moved to in-progress after the `proceed` verdict and in-review after the PR
 - [ ] workshop: Linear and Jira lookup, issue creation path
