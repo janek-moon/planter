@@ -105,15 +105,15 @@ Prompt the worker pane with the plan file path, the checkout path, and the repo'
 
 Every later round of implementation — review fixes, rework — also goes to the worker pane. Do not route it to an executor subagent inside the planner pane: the user cannot see that work.
 
-## Step 7: Diff review — reviewer pane always, CodeRabbit when available
+## Step 7: Diff review — reviewer pane always, CodeRabbit when asked
 
 1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex). Hear back as in Hearing back from the panes.
-2. **CodeRabbit CLI (optional).** Only when `command -v coderabbit` (or `cr`) succeeds:
+2. **CodeRabbit CLI.** Only when the user asked for a CodeRabbit review of this work. Being installed is not a request.
    ```
    coderabbit review --base <base> --committed --agent
    coderabbit review findings   # re-read the last run
    ```
-   Not installed or not authenticated: say so and continue with the reviewer pane alone — never block on it.
+   Asked for, but `command -v coderabbit` (or `cr`) fails or it is not authenticated: say so and continue with the reviewer pane alone — never block on it.
 
 The planner triages every finding as real, false positive, or real but out of scope. Real ones go to the worker pane; out-of-scope ones go in the plan file's `Follow-ups` section with the reason, for planter:sweep to finish after the merge. Then **re-run every review that ran**. Loop until all of them pass.
 
