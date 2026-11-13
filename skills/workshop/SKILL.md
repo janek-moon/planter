@@ -123,13 +123,21 @@ Never stash, clean, or resolve anything yourself.
 
 Each pane gets its agent, launched but not prompted. Defaults:
 
-| Pane | Kind | Effort | Flags after `--` |
-|------|------|--------|------------------|
-| planner | claude | high | `--effort high` |
-| worker | claude | medium | `--effort medium` |
-| reviewer | codex | medium | `-c model_reasoning_effort=medium` |
+| Pane | Kind | Model | Effort | Flags after `--` |
+|------|------|-------|--------|------------------|
+| planner | claude | `opus` | high | `--model opus --effort high` |
+| worker | claude | `opus` | medium | `--model opus --effort medium` |
+| reviewer | codex | newest Sol | medium | `-m <sol> -c model_reasoning_effort=medium` |
 
-The user can override kind and effort per pane in the request ("reviewer는 claude effort high로", "worker codex high"). Map the effort onto the kind's flag: claude `--effort <low|medium|high|xhigh|max>`, codex `-c model_reasoning_effort=<level>`. An effort the kind does not accept fails `agent start` — report it and ask, do not guess a nearby level. If `command -v codex` fails: a default codex reviewer runs as claude with the same effort, and you say so; a codex the user asked for by name means STOP and report.
+`opus` is claude's alias for the newest Opus. Codex has no such alias, so `<sol>` is read from its model catalog right before the start:
+
+```
+codex debug models | jq -r '[.models[] | select(.visibility == "list" and (.slug | endswith("-sol")))] | sort_by(.priority) | .[0].slug'
+```
+
+Empty output or an error: STOP and report, do not guess a slug.
+
+The user can override kind, model, and effort per pane in the request ("reviewer는 claude effort high로", "worker는 sonnet으로", "worker codex high"). Map them onto the kind's flags: claude `--model <alias or id>` and `--effort <low|medium|high|xhigh|max>`, codex `-m <slug>` and `-c model_reasoning_effort=<level>`. A kind named without a model gets that kind's default model above (claude `opus`, codex newest Sol). An effort the kind does not accept fails `agent start` — report it and ask, do not guess a nearby level. If `command -v codex` fails: a default codex reviewer runs as claude `opus` with the same effort, and you say so; a codex the user asked for by name means STOP and report.
 
 Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into. If the user named a kind or effort for a pane that already runs an agent, say that the running one was kept and ask whether to restart it — never stop it yourself.
 
@@ -162,7 +170,7 @@ herdr-app do space.new --name "<label>" --folder "<checkout_path>" --tab main --
 
 Reuse path: list the space's terminals in `herdr-app ls` before touching anything, and create only what is missing — never a second worker or reviewer. The rebase checks of Step 4 apply unchanged, with `hc get <t> --json` `.status.state` in place of `herdr pane get` (no `.status.app` means a bare shell).
 
-**Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --effort <level>`, codex `codex --no-daemon -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` carries the profile: `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets, each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
+**Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --model <model> --effort <level>`, codex `codex --no-daemon -m <model> -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` carries the profile: `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets, each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
 
 - Planner: a new space starts it through `--argv` above. On the reuse path, a planner terminal at a shell prompt (`hc read <terminal> --lines 5`) gets `hc send <terminal> '<env><command>'`. Do not type into the shell of a space you just made: its startup files may still be loading, and the typed Enter then lands on claude's trust dialog and picks "No, exit".
 - Reviewer, then worker — each a split of the planner pane (its `.pane` id in `herdr-app ls`). `terminal.open` splits the focused pane, so focus the planner pane first, every time:
@@ -179,7 +187,7 @@ After each start, `hc wait <t> --timeout 60` returns `idle` once the agent is re
 
 ## Step 6: Report
 
-Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:collab in the planner pane, or hands a task over through planter:tenant.
+Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, model, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:collab in the planner pane, or hands a task over through planter:tenant.
 
 ## Common Mistakes
 
