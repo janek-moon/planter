@@ -41,7 +41,7 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
 | `planter:workshop` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
-| `planter:collab` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when installed), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:collab` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when asked for), and opens the PR, moving the issue's status along the way — the planner never writes product code |
 | `planter:sweep` | herdr or Herdr app only, from the planner pane of finished work: finishes follow-up issues and spec edits, removes the Docker containers, simulators, worktree, and branch that belong to the work, and closes the workspace last |
 
 ## Usage
@@ -57,7 +57,7 @@ Just ask Claude Code or Codex:
 - "File an issue for this and open a worktree for it"
 - "Open a worktree for this, no issue needed"
 - "Start ABC-123, reviewer as claude effort high" — overrides one pane's default agent
-- "Take ABC-123 all the way to a PR" — from the planner pane: need check, plan, reviewer-pane approval, worker-pane implementation, two-source diff review, PR
+- "Take ABC-123 all the way to a PR" — from the planner pane: need check, plan, reviewer-pane approval, worker-pane implementation, diff review, PR
 
 ## How it works
 
@@ -82,7 +82,7 @@ Just ask Claude Code or Codex:
 3. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
 4. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
 5. **Delegate** — the worker pane implements and commits; every later fix round goes there too, never to a subagent inside the planner pane.
-6. **Review** — reviewer pane always, plus the CodeRabbit CLI only when it is installed, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
+6. **Review** — reviewer pane always, plus the CodeRabbit CLI only when you ask for it, against the base branch; the planner triages, the worker fixes, every review that ran reruns until all pass.
 7. **PR** — pushed and opened against the base branch in the repo's format.
 
 When the work has an issue, its status moves with it: to in-progress once the check says `proceed`, to in-review once the PR is open — whichever of the project's own transitions match. A failed or missing transition is reported, never blocking.
@@ -104,7 +104,7 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - Claude Code or Codex with plugin support; `claude` / `codex` CLIs on PATH for those runners
 - The issue-or-not choice in `planter:workshop` is a click-to-answer dialog (AskUserQuestion in Claude Code, `request_user_input` in Codex). Codex shows it in Plan mode, or in Default mode once the `default_mode_request_user_input` feature is enabled; otherwise it asks in plain text
 - For `planter:workshop`: herdr or the Herdr app, and a git repo — plus a Jira or Linear MCP when the work comes from an issue
-- For `planter:collab`: a herdr issue workspace (or Herdr app space) with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) is optional
+- For `planter:collab`: a herdr issue workspace (or Herdr app space) with planner/worker/reviewer panes, a tracker MCP, and `gh`; the CodeRabbit CLI (`coderabbit`) only if you ask for its review
 
 ## Manual verification checklist
 
