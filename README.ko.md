@@ -40,7 +40,7 @@ codex plugin add planter@planter
 | `planter:tenant-claude` | 작업을 `claude` CLI로 실행 (기본 러너) |
 | `planter:tenant-codex` | 작업을 `codex` CLI로 실행 |
 | `planter:tenant-shell` | 완료 감지를 위한 센티넬과 함께 일반 셸 명령을 실행 |
-| `planter:workshop` | herdr·Herdr 앱 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄우고, 작업이 띄울 모든 것에 브랜치에서 딴 작업 이름을 붙임 |
+| `planter:workshop` | herdr·Herdr 앱 전용: Jira/Linear 이슈를 받거나, 만들거나, 이슈 없이 진행하거나 해서 worktree를 열고, workspace 이름을 작업 이름으로 바꾸고, planner/worker/reviewer pane을 배치하고 각각 에이전트를 띄우고, 작업이 띄울 모든 것에 저장소와 브랜치에서 딴 작업 이름을 붙임 |
 | `planter:collab` | herdr·Herdr 앱 전용, planner pane에서: 이슈가 아직 필요한지 reviewer pane과 확인하고, 분석해 계획을 쓰고, reviewer pane의 승인을 받고, worker pane에 구현을 맡기고(pane들은 Docker·시뮬레이터·브라우저를 작업 이름이 붙은 전용 인스턴스로 띄웁니다), reviewer pane 지적(요청하면 CodeRabbit 지적도)을 분류한 뒤 PR을 엽니다. 그 사이 이슈 상태도 단계에 맞게 옮깁니다. planner는 코드를 쓰지 않습니다 |
 | `planter:sweep` | herdr·Herdr 앱 전용, 끝난 작업의 planner pane에서: 후속 이슈와 스펙 수정을 마무리하고, 그 작업 이름이 붙은 Docker 컨테이너, 시뮬레이터와 워크트리, 브랜치를 지운 뒤 마지막에 workspace를 닫습니다 |
 

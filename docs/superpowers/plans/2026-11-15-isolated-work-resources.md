@@ -14,7 +14,7 @@
 
 ## Global Constraints
 
-- Work name = branch lowercased with every `/` turned into `-` (`feat/ABC-123-x` → `feat-abc-123-x`); it is the same string as the worktree folder name in `~/.herdr/worktrees/<repo>/`.
+- Work name = `<repo>-<branch>` lowercased, every character outside `[a-z0-9_-]` turned into `-` (`feat/ABC-123-x` in repo `shop` → `shop-feat-abc-123-x`). Changed from the branch-only form after the final review: two repos on one issue would otherwise share a Compose project, and a dot in a branch is not a valid Compose project name.
 - The two variables are exactly `PLANTER_WORK` and `COMPOSE_PROJECT_NAME`, both set to the work name, exported into **every** pane on **both** front ends, **always** (not only when a profile variable is set).
 - Values typed into a pane are quoted with `printf %q`, as the profile variables are.
 - sweep still never passes `-v` to `docker compose down`, never removes volumes or images, and removes nothing that neither carries the work name nor is listed in `Resources`.
@@ -53,7 +53,7 @@ grep -c 'Work name' skills/workshop/SKILL.md            # expect 0 now, 1 after
 
 - [ ] **Step 3: Define the work name in Step 2**
 
-After the `Workspace label:` paragraph (line 71), add a paragraph starting `Work name:` that states: the branch lowercased with every `/` turned into `-` (`feat/ABC-123-x` → `feat-abc-123-x`); it names the worktree folder, and everything the work starts outside the checkout — Compose project, containers, simulators, browser task space — carries it (planter:collab Step 6, planter:sweep Step 3). It is `[a-z0-9-]` by construction, which Compose accepts as a project name.
+After the `Workspace label:` paragraph (line 71), add a paragraph starting `Work name:` that states: the branch lowercased with every `/` turned into `-` (`feat/ABC-123-x` → `feat-abc-123-x`); it names the worktree folder, and everything the work starts outside the checkout — Compose project, containers, simulators, browser task space — carries it (planter:collab Step 6, planter:sweep Step 3). (The final review changed the definition; see Global Constraints.)
 
 - [ ] **Step 4: Export always on the herdr side (Step 5, line 144)**
 

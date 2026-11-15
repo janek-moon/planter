@@ -70,7 +70,7 @@ Branch — `<type>/<KEY>-<slug>`, same shape for both trackers. Without an issue
 
 Workspace label: `<KEY> <title>`, matching how issue workspaces already read in the sidebar. Use the title alone if the user asks for that. Without an issue, the label is the work in a few words — the sentence from Step 1, trimmed to what fits a sidebar.
 
-Work name: the branch lowercased with every `/` turned into `-` (`feat/ABC-123-x` → `feat-abc-123-x`). It names the worktree folder, and everything the work starts outside the checkout carries it — the Compose project, containers, simulators, the browser task space (planter:collab Step 6 makes the panes create them under it; planter:sweep Step 3 finds them by it). Every pane holds it as `$PLANTER_WORK` (Step 5). It is `[a-z0-9-]` by construction, which Compose accepts as a project name.
+Work name: `<repo>-<branch>` lowercased, with every character outside `[a-z0-9_-]` turned into `-` (`feat/ABC-123-x` in repo `shop` → `shop-feat-abc-123-x`; a dot becomes `-` too, because Compose rejects it). `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`). The repo is part of it because one issue often opens the same branch in two repos at once, and those two works must not share a Compose project. Everything the work starts outside the checkout carries it — the Compose project, containers, simulators, the browser task space (planter:collab Step 6 makes the panes create them under it; planter:sweep Step 3 finds them by it). Every pane holds it as `$PLANTER_WORK` (Step 5).
 
 Base: `git symbolic-ref --short refs/remotes/origin/HEAD` — it already resolves per repo (`origin/develop`, `origin/development`, `origin/main`), so do not assume `main`. If the ref is unset, ask instead of guessing. A base the user named wins.
 
@@ -90,7 +90,7 @@ Also note whether the branch already exists locally (`git rev-parse --verify --q
 herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<label>" --no-focus
 ```
 
-- Read `.result.workspace.workspace_id`, `.result.workspace.worktree.checkout_path`, and `.result.root_pane.pane_id` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<work name>`.
+- Read `.result.workspace.workspace_id`, `.result.workspace.worktree.checkout_path`, and `.result.root_pane.pane_id` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<branch lowercased, every / turned into ->`.
 - `--label` becomes the workspace name — no separate rename call.
 - `--no-focus` leaves the user where they are. Pass `--focus` only when they asked to jump there.
 - Any error other than the one below: STOP and report the JSON error as-is. Do not retry with a different branch name.
@@ -155,7 +155,7 @@ The workspace id in the name keeps it unique — every issue workspace has a pla
 
 The app has no worktree command, so git makes the checkout and the app gets a space for it. Same rules as above where not restated: fetch first, never retry under another branch name, rebase an existing branch only after the checks in Step 4, never stash or resolve anything yourself.
 
-**Step 3 — checkout.** `git fetch origin` (fails: STOP). The path follows herdr's layout so both front ends find the same checkouts: `~/.herdr/worktrees/<repo>/<work name>` (Step 2), where `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`).
+**Step 3 — checkout.** `git fetch origin` (fails: STOP). The path follows herdr's layout so both front ends find the same checkouts: `~/.herdr/worktrees/<repo>/<branch lowercased, every / turned into ->` (`feat/ABC-123-x` → `feat-abc-123-x`), where `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`).
 - `git worktree list --porcelain` already shows the branch checked out: reuse that path as it is.
 - Otherwise the branch exists locally: `git worktree add <path> <branch>`. It does not: `git worktree add --no-track -b <branch> <path> <base>` — without `--no-track` the new branch would track the base (`origin/main`), and a later push or pull would aim at the base branch.
 - Any error: STOP and report it as-is.

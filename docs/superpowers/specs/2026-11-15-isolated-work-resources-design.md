@@ -18,9 +18,11 @@ a sweep removes only what carries its own name.
 
 ## Goals
 
-- One name per work, derived from the branch the way the worktree folder
-  already is: the branch lowercased with every `/` turned into `-`
-  (`feat/ABC-123-x` → `feat-abc-123-x`). Call it the **work name**.
+- One name per work: `<repo>-<branch>` lowercased, with every character
+  outside `[a-z0-9_-]` turned into `-` (`feat/ABC-123-x` in repo `shop` →
+  `shop-feat-abc-123-x`). Call it the **work name**. The repo is in it
+  because one issue often opens the same branch in two repos at once, and
+  those two works must not share a Compose project (final-review finding).
 - Compose is isolated even when an agent forgets to ask for it.
 - Simulators, hand-started containers, and browser task spaces are created
   fresh under the work name, never borrowed from the user's defaults.
@@ -65,8 +67,8 @@ skills-only, and a script is one more thing every pane must find on `PATH`.
 
 ### workshop
 
-- **Step 2** defines the work name next to the branch, and notes it names the
-  worktree folder and everything the work starts outside the checkout.
+- **Step 2** defines the work name next to the branch, and notes that
+  everything the work starts outside the checkout carries it.
 - **Step 5 (herdr)** exports `PLANTER_WORK` and `COMPOSE_PROJECT_NAME` into
   every pane before `herdr agent start`, through the existing
   `herdr pane run <pane_id> "export …"` path. Unlike the profile variables,
@@ -121,10 +123,10 @@ isolation rule in a clause each.
 ## Constraints
 
 - No value typed into a pane may contain anything the shell reinterprets:
-  the work name is `[a-z0-9-]` by construction, but still quote it the way
+  the work name is `[a-z0-9_-]` by construction, but still quote it the way
   the profile variables are quoted.
-- Compose project names must be lowercase `[a-z0-9_-]` and start with a
-  letter or digit — the work name satisfies this.
+- Compose project names must be lowercase `[a-z0-9_-]` — a dot is rejected,
+  which is why the flattening maps every other character, not only `/`.
 - A pane's shell does not inherit the planner's environment; every export is
   explicit, on both front ends and on every restart path.
 

@@ -46,7 +46,7 @@ Do this before anything is removed or switched.
 
 **The user's call, listed file by file as absolute paths:** every other untracked or ignored path. An untracked source file may be work nobody committed, and a local database may be unrebuildable. If the user keeps any of them, the sweep ends after Step 6 with the worktree, branch, and workspace in place.
 
-**Kept:** Docker volumes and images, any simulator or service that existed before this work, and anything without the work name that `Resources` does not list. Ownership unclear: report it, do not remove it.
+**Kept:** Docker volumes and images, any simulator or service that existed before this work, and anything that carries no work name, matches no `working_dir`, and is not in `Resources`. Ownership unclear: report it, do not remove it.
 
 ## Step 4: One confirmation
 
