@@ -41,11 +41,12 @@ Do this before anything is removed or switched.
 **Removable, because this work owns it:**
 - Entries in the plan file's `Resources` section, by exact id.
 - Docker Compose projects whose `com.docker.compose.project.working_dir` label is this checkout path or a folder inside it: their containers and networks only.
+- Anything carrying the work name (planter:workshop Step 2 — `$PLANTER_WORK` in your environment, or derived from the branch), because planter:collab Step 6 has the panes create their resources under it: the Compose project named `<work name>` (`docker compose ls -a` — stopped projects are the usual leftovers), containers labeled `planter.work=<work name>` (`docker ps -a --filter label=planter.work=<work name>`), an iOS simulator or AVD named `<work name>` (`xcrun simctl list devices -j`, `avdmanager list avd`), an ego-browser task space whose `listTaskSpaces()` entry has `name === "<work name>"` **and** `ownership !== "user"` — a user-owned space of the same name is never touched, while a space `Resources` records by `id` is removable whatever its name — and the override file `~/.claude/plans/<KEY>-<slug>.compose.yml` when it exists.
 - Agent tool state (`.omc/`, `.serena/`), build output, installed dependencies (`node_modules/`), and caches, as whole folders, because their contents keep changing. Find them in `git status --porcelain --ignored --untracked-files=all` and write them as absolute paths inside this checkout.
 
 **The user's call, listed file by file as absolute paths:** every other untracked or ignored path. An untracked source file may be work nobody committed, and a local database may be unrebuildable. If the user keeps any of them, the sweep ends after Step 6 with the worktree, branch, and workspace in place.
 
-**Kept:** Docker volumes and images, and any simulator or service that existed before this work. Ownership unclear: report it, do not remove it.
+**Kept:** Docker volumes and images, any simulator or service that existed before this work, and anything without the work name that `Resources` does not list. Ownership unclear: report it, do not remove it.
 
 ## Step 4: One confirmation
 
@@ -57,7 +58,7 @@ Just before each removal, check that its id still matches the list; a mismatch i
 
 ## Step 5: Remove what the follow-ups do not need
 
-`docker compose -p <project> down` (no `-v`), then each recorded resource. Keep anything a follow-up still uses.
+`docker compose -p <work name> down` (no `-v`) and the same for any `working_dir`-matched project, `docker rm -f` the containers labeled with the work name, `xcrun simctl delete <udid>` / `avdmanager delete avd -n <work name>`, `task.finish({ keep: [] })` on the work's task space, `rm` the override file, then each recorded resource. Keep anything a follow-up still uses.
 
 Without a PR, when the user confirmed the Step 4 warning, it listed modified or staged tracked files, and the user chose to keep nothing in Step 3: compare `git status --porcelain` with that list (different: STOP and ask), then discard them with `git -C "<checkout_path>" reset --hard`.
 
@@ -96,5 +97,6 @@ Never move the original issue to done; merging decides that.
 - Using `git branch -d` as the merge check — it fails after a squash merge.
 - Running shell calls from the checkout after removing it — the next shell may fail to start there.
 - Removing a simulator because it was used, rather than because this work created it.
+- Finishing a browser task space because its name matches, without checking `ownership` — the user may have one of the same name.
 - `docker compose down -v` — volumes hold data this work may not own.
 - Closing the workspace before writing the result to the plan file.
