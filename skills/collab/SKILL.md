@@ -73,14 +73,29 @@ Only when the work has an issue; no key: go to Step 2. An issue can go stale aft
    - The code: does what the issue asks for already exist, does a reported bug still reproduce from reading the code path, does the code it names still exist?
    - The history: `git log origin/<base> --grep=<KEY>`, and `git log origin/<base> -- <paths>` for commits that did the work without naming the key.
    - The PRs: `gh pr list --state all --search <KEY>`.
+   - The running client, when the issue is about a web or app client (a screen, a flow, what the user sees): reproduce the bug or check the feature in the client itself, not only in the code. See Checking a client below.
 
    This branch's own commits and its own PR are this same work, not evidence against it; name them in the assessment so the reviewer pane treats them the same way.
-3. **Write your assessment** at the top of the plan file (`~/.claude/plans/<KEY>-<slug>.md`, outside the repo): what the issue asks, quoting the body and the comments that matter because the reviewer pane may not reach the tracker; what the repo shows, with `file:line` and commit evidence; your call, `proceed` or `stop`; and, when part of the work is already done, what remains.
-4. **Get the reviewer pane's verdict.** Prompt it with the plan file path, `origin/<base>`, read-only, the instruction to check the repo itself rather than trust the assessment, and a screen-output format: one line reading `proceed` / `stop`, then the reasons with evidence. Hear back as in Hearing back from the panes.
+3. **Write your assessment** at the top of the plan file (`~/.claude/plans/<KEY>-<slug>.md`, outside the repo): what the issue asks, quoting the body and the comments that matter because the reviewer pane may not reach the tracker; what the repo shows, with `file:line` and commit evidence; what the client showed, when you checked one; your call, `proceed` or `stop`; and, when part of the work is already done, what remains.
+4. **Get the reviewer pane's verdict.** Prompt it with the plan file path, `origin/<base>`, the screenshot paths if any, read-only, the instruction to check the repo itself rather than trust the assessment, and a screen-output format: one line reading `proceed` / `stop`, then the reasons with evidence. Hear back as in Hearing back from the panes.
 5. **Settle it.**
    - Both `proceed`: record any narrowed scope in the plan file, move the issue to in-progress (see Issue status follows the work), go to Step 2.
    - Both `stop`: stop and report the evidence. Leave the issue's status alone, and do not comment on or close it; that is the user's call.
    - Different calls: weigh the reviewer's evidence. If it changes your call, update the plan file; you now agree, so apply that case above. If not, add your counter-evidence or your doubts to the plan file and resend once. Still different: ask the user with a choice dialog that states both positions and their evidence. The user's answer is the verdict, handled as in the two cases above. Neither pane overrules the other.
+
+### Checking a client
+
+The planner does this itself; it runs the client, it does not change it.
+
+- **What to run:** what the base branch ships. Either build and run this checkout, only when `git status --porcelain` shows no modified or staged tracked file and no untracked path other than agent tool state (`.omc/`, `.omx/`, `.serena/`), and `git rev-parse HEAD` equals `git rev-parse origin/<base>`; record that commit id. Anything else in the checkout: leave it untouched (never clean or reset it) and use the environment below, or the code. Or use an environment the repo docs name (a dev or staging URL), and record the revision it runs if it shows one (a version page, a build footer). Its revision unknown: say so, and a bug that does not reproduce there is not enough on its own for `stop`. Neither is available: say so in the assessment and judge from the code.
+- **Web:** a browser, through the browser tool the user's instructions prefer (ego-browser, for example); none named: whatever browser automation is connected.
+- **App:** the iOS Simulator (`xcrun simctl`, with a device UDID rather than `booted`) or the Android emulator. For Android, pick the emulator's serial from `adb devices` (`emulator-5554`, never a physical device) and pass `adb -s <serial>` on every command. Record the device id in the assessment. Prefer a simulator that already exists. One you create for this goes in the plan file's `Resources` section with its id, so planter:sweep removes it later.
+- **Logins:** use a session the browser or app already has. Anything else (an account, a password, a test user): ask the user. Never type a secret yourself.
+- **Shared environments:** do not submit anything that changes data other people see (orders, messages, settings) unless the user says so.
+- **Evidence:** capture a screenshot whenever the screen is what proves the call (`xcrun simctl io <udid> screenshot <file>`, `adb -s <serial> exec-out screencap -p > <file>`, or the browser tool's screenshot). Save it next to the plan file, in `~/.claude/plans/<KEY>-<slug>-shots/`, never inside the checkout. In the assessment, list the steps you took (URL or screen, actions, the account kind but not its secret) and what each screenshot shows.
+- **No secrets in the evidence:** look at each screenshot before keeping it. One that shows a key, a token, a password, or personal data the issue is not about: capture a narrower area that leaves it out, or delete the file and describe the screen in words instead. Write URLs without query strings or fragments that carry a token.
+- **Could not reproduce:** that is evidence too, but say what you tried and what might differ (environment, data, account) before calling the bug gone.
+- Stop any dev server you started once the check is done.
 
 ## Step 2: Find the code and the repo's rules
 
@@ -136,6 +151,8 @@ Then move the issue to in-review (see Issue status follows the work). Report the
 - Delegating on a `conditional` review — fix the plan until it reads `approved`.
 - Moving the issue to in-progress, or stopping, on the planner's call alone — Step 1 needs the reviewer pane's verdict first.
 - Asking the user before reading the issue comments, repo docs, and reference source.
+- Judging a client issue from the code alone when the client can be run.
+- Saving screenshots inside the checkout, where they become untracked files the PR or the sweep has to deal with.
 - Letting the planner commit or push code it wrote itself.
 - Hardcoding a transition name like "In Progress" — read the issue's transitions first.
 - Stopping the flow because a status transition failed.

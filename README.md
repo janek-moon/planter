@@ -77,7 +77,7 @@ Just ask Claude Code or Codex:
 
 ### Driving an issue to a PR (herdr or Herdr app only)
 
-1. **Check** — issue body, parent, links, and comments are compared against the latest base branch (code, history, PRs) to see whether the work is still needed. The reviewer pane checks independently; both agreeing `proceed` continues, both agreeing `stop` ends the run with the evidence, and a disagreement that one more exchange does not settle goes to you.
+1. **Check** — issue body, parent, links, and comments are compared against the latest base branch (code, history, PRs) to see whether the work is still needed. For a web or app client issue, the planner also checks the running client when one is available (a browser, or the iOS Simulator or Android emulator), captures screenshots when the screen is the evidence, and records when it could not run or reproduce it. The reviewer pane checks independently; both agreeing `proceed` continues, both agreeing `stop` ends the run with the evidence, and a disagreement that one more exchange does not settle goes to you.
 2. **Analyze** — the code to change; the repo's own verification command, commit rules, review contract, and PR format from its docs.
 3. **Plan** — open questions are settled from evidence first (repo docs, any reference source they point at); a plan file with numbered verification items is written outside the repo.
 4. **Gate** — the reviewer pane must answer `approved` before anything is delegated; `conditional` sends the plan back.
@@ -122,6 +122,7 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [x] workshop: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] workshop: base fetched before create, reuse path rebased, default agents started with their model and effort, per-pane override
 - [ ] collab: stale issue stopped by planner and reviewer-pane agreement with its status untouched; disagreement goes to the user
+- [ ] collab: client issue reproduced in a browser or simulator, screenshots saved next to the plan file and used in the verdict
 - [ ] collab: issue moved to in-progress after the `proceed` verdict and in-review after the PR
 - [ ] workshop: Linear and Jira lookup, issue creation path
 - [ ] fire-and-forget: injection confirmed, no monitoring afterwards
