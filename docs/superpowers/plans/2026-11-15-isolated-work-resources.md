@@ -210,7 +210,7 @@ workshop row: add "and names everything the work will start after the branch". c
 
 ```bash
 grep -c '0.16.0' .claude-plugin/plugin.json .codex-plugin/plugin.json   # 1 each
-grep -c 'named after the work' README.md                                 # ≥ 1
+grep -c 'named after the repo and branch' README.md                                 # ≥ 1
 ```
 
 - [ ] **Step 4: Commit**
