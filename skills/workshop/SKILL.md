@@ -70,6 +70,8 @@ Branch — `<type>/<KEY>-<slug>`, same shape for both trackers. Without an issue
 
 Workspace label: `<KEY> <title>`, matching how issue workspaces already read in the sidebar. Use the title alone if the user asks for that. Without an issue, the label is the work in a few words — the sentence from Step 1, trimmed to what fits a sidebar.
 
+Work name: `<repo>-<branch>` lowercased, with every character outside `[a-z0-9_-]` turned into `-` (`feat/ABC-123-x` in repo `shop` → `shop-feat-abc-123-x`; a dot becomes `-` too, because Compose rejects it). `<repo>` is the main checkout's folder name (`basename "$(dirname "$(git rev-parse --path-format=absolute --git-common-dir)")"`). The repo is part of it because one issue often opens the same branch in two repos at once, and those two works must not share a Compose project. Everything the work starts outside the checkout carries it — the Compose project, containers, simulators, the browser task space (planter:collab Step 6 makes the panes create them under it; planter:sweep Step 3 finds them by it). Every pane holds it as `$PLANTER_WORK` (Step 5).
+
 Base: `git symbolic-ref --short refs/remotes/origin/HEAD` — it already resolves per repo (`origin/develop`, `origin/development`, `origin/main`), so do not assume `main`. If the ref is unset, ask instead of guessing. A base the user named wins.
 
 ## Step 3: Open the worktree
@@ -88,7 +90,7 @@ Also note whether the branch already exists locally (`git rev-parse --verify --q
 herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<label>" --no-focus
 ```
 
-- Read `.result.workspace.workspace_id`, `.result.workspace.worktree.checkout_path`, and `.result.root_pane.pane_id` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<branch-slug>`.
+- Read `.result.workspace.workspace_id`, `.result.workspace.worktree.checkout_path`, and `.result.root_pane.pane_id` from the JSON. The checkout lands under `~/.herdr/worktrees/<repo>/<branch lowercased, every / turned into ->`.
 - `--label` becomes the workspace name — no separate rename call.
 - `--no-focus` leaves the user where they are. Pass `--focus` only when they asked to jump there.
 - Any error other than the one below: STOP and report the JSON error as-is. Do not retry with a different branch name.
@@ -141,7 +143,7 @@ The user can override kind, model, and effort per pane in the request ("reviewer
 
 Which panes: on a fresh workspace, all three. On the reuse path, only a pane whose `.agent` is empty and whose screen (`herdr pane read <pane_id> --source visible --lines 5`) shows a shell prompt. A running agent stays as it is; anything else is reported, never typed into. If the user named a kind or effort for a pane that already runs an agent, say that the running one was kept and ask whether to restart it — never stop it yourself.
 
-The agents run under the same profile as the session running this skill. A pane's shell does not inherit the caller's environment, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into every pane you start, whatever its kind — the planner needs the reviewer's profile too, to restart it later (planter:collab Step 0). Let `printf %q` quote the value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither variable set: nothing to export. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
+A pane's shell does not inherit the caller's environment, so every pane you start, whatever its kind, first gets the work name (Step 2) in one command: `herdr pane run <pane_id> "export PLANTER_WORK=$(printf %q "<work name>") COMPOSE_PROJECT_NAME=$(printf %q "<work name>")"`. These two are always exported — `COMPOSE_PROJECT_NAME` keeps a `docker compose up` in this work's own project even when nobody passes `-p`. Then the profile: the agents run under the same profile as the session running this skill, so check your own for `CLAUDE_CONFIG_DIR` and `CODEX_HOME` and export every one that is set into the same panes — the planner needs the reviewer's profile too, to restart it later (planter:collab Step 0). Let `printf %q` quote each value so nothing in it is reinterpreted on either side: `herdr pane run <pane_id> "export CODEX_HOME=$(printf %q "$CODEX_HOME")"`. In the pane that will run codex under a non-default `CODEX_HOME`, start its daemon first, ending with a sentinel unique to this call (`<tok>` = e.g. `date +%s%N`): `herdr pane run <pane_id> '(cd ~ && codex app-server daemon start >/dev/null); echo daemon-<tok>-$?'`. Read the pane for up to 30 s for a whole line `daemon-<tok>-0` — the echoed command shows `-$?`, so it cannot match. Any other number, or nothing within 30 s: STOP and report. Neither profile variable set: only the two work-name exports. A profile carried by a secret (`CLAUDE_CODE_OAUTH_TOKEN`, `ANTHROPIC_API_KEY`, `OPENAI_API_KEY`) is never typed into a pane — the value would sit on screen and in shell history; ask the user how that profile is launched instead.
 
 ```
 herdr agent start <role>-<workspace_id lowercased> --kind <kind> --pane <pane_id> -- <flags>
@@ -170,7 +172,7 @@ herdr-app do space.new --name "<label>" --folder "<checkout_path>" --tab main --
 
 Reuse path: list the space's terminals in `herdr-app ls` before touching anything, and create only what is missing — never a second worker or reviewer. The rebase checks of Step 4 apply unchanged, with `hc get <t> --json` `.status.state` in place of `herdr pane get` (no `.status.app` means a bare shell).
 
-**Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --model <model> --effort <level>`, codex `codex --no-daemon -m <model> -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` carries the profile: `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets, each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
+**Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --model <model> --effort <level>`, codex `codex --no-daemon -m <model> -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` is always `PLANTER_WORK=<work name> COMPOSE_PROJECT_NAME=<work name> ` (Step 2), followed by the profile — `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets — each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
 
 - Planner: a new space starts it through `--argv` above. On the reuse path, a planner terminal at a shell prompt (`hc read <terminal> --lines 5`) gets `hc send <terminal> '<env><command>'`. Do not type into the shell of a space you just made: its startup files may still be loading, and the typed Enter then lands on claude's trust dialog and picks "No, exit".
 - Reviewer, then worker — each a split of the planner pane (its `.pane` id in `herdr-app ls`). `terminal.open` splits the focused pane, so focus the planner pane first, every time:
@@ -187,7 +189,7 @@ After each start, `hc wait <t> --timeout 60` returns `idle` once the agent is re
 
 ## Step 6: Report
 
-Workspace (or space) id and label, checkout path, branch, the issue URL when there is one, and each pane with the agent, kind, model, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:collab in the planner pane, or hands a task over through planter:tenant.
+Workspace (or space) id and label, checkout path, branch, the work name, the issue URL when there is one, and each pane with the agent, kind, model, effort, and profile it runs. The agents sit idle — the work itself starts when the user runs planter:collab in the planner pane, or hands a task over through planter:tenant.
 
 ## Common Mistakes
 

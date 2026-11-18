@@ -40,9 +40,9 @@ The same skills load in both; start a new session after installing.
 | `planter:tenant-claude` | Runs the task under the `claude` CLI (default runner) |
 | `planter:tenant-codex` | Runs the task under the `codex` CLI |
 | `planter:tenant-shell` | Runs a plain shell command with sentinel-based completion detection |
-| `planter:workshop` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each |
-| `planter:collab` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane, triages reviewer-pane findings (and CodeRabbit's, when asked for), and opens the PR, moving the issue's status along the way — the planner never writes product code |
-| `planter:sweep` | herdr or Herdr app only, from the planner pane of finished work: finishes follow-up issues and spec edits, removes the Docker containers, simulators, worktree, and branch that belong to the work, and closes the workspace last |
+| `planter:workshop` | herdr or Herdr app only: takes a Jira/Linear issue, files one, or works without any issue, then opens a worktree on a conventionally named branch, names the workspace after the work, and lays out planner/worker/reviewer panes with an agent started in each; everything the work will start is named after the repo and branch |
+| `planter:collab` | herdr or Herdr app only, from the planner pane: checks with the reviewer pane that the issue is still needed, analyzes it, writes a plan, gets it approved in the reviewer pane, delegates implementation to the worker pane (the panes run Docker, simulators, and browsers in instances named after the work), triages reviewer-pane findings (and CodeRabbit's, when asked for), and opens the PR, moving the issue's status along the way — the planner never writes product code |
+| `planter:sweep` | herdr or Herdr app only, from the planner pane of finished work: finishes follow-up issues and spec edits, removes the Docker containers, simulators, worktree, and branch that belong to the work, found by the work name, and closes the workspace last |
 
 ## Usage
 
