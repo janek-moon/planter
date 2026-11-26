@@ -96,19 +96,19 @@ herdr worktree create --cwd "$PWD" --branch <branch> --base <base> --label "<lab
 
 ## Step 4: Lay out the three panes
 
-Every issue workspace gets the same three: `planner` top left, `worker` below it, `reviewer` down the right side. The root pane becomes the planner, so only two splits are needed (`--ratio` defaults to 0.5, which is the shape these workspaces already have):
+Every issue workspace gets the same three: `planner` down the left side, `worker` top right, `reviewer` below it. The root pane becomes the planner, so only two splits are needed (`--ratio` defaults to 0.5, which is the shape these workspaces already have):
 
 ```
 herdr pane rename <root_pane_id> planner
 herdr pane split --pane <root_pane_id> --direction right --cwd "<checkout_path>" --no-focus
-herdr pane rename <pane_id from that response> reviewer
-herdr pane split --pane <root_pane_id> --direction down --cwd "<checkout_path>" --no-focus
 herdr pane rename <pane_id from that response> worker
+herdr pane split --pane <worker_pane_id> --direction down --cwd "<checkout_path>" --no-focus
+herdr pane rename <pane_id from that response> reviewer
 ```
 
-Each split returns the new pane at `.result.pane.pane_id` — rename that one, not the root. `--cwd` matters because only the root pane inherits the checkout path; without it the splits open wherever the caller was.
+Each split returns the new pane at `.result.pane.pane_id` — rename that one, not the root. The second split cuts the worker pane, not the root, so the planner keeps the full height. `--cwd` matters because only the root pane inherits the checkout path; without it the splits open wherever the caller was.
 
-Reuse path (`already_open: true`): list what is there with `herdr pane list --workspace <workspace_id>` before touching anything. Label only what is missing, and run only the splits needed to get back to three — never a second set. If three panes exist but carry no labels, `herdr pane layout --pane <root_pane_id>` gives their positions: top left is the planner, below it the worker, the full-height one on the right the reviewer.
+Reuse path (`already_open: true`): list what is there with `herdr pane list --workspace <workspace_id>` before touching anything. Label only what is missing, and run only the splits needed to get back to three — never a second set. If three panes exist but carry no labels, `herdr pane layout --pane <root_pane_id>` gives their positions: the full-height one on the left is the planner, top right the worker, below it the reviewer.
 
 Then, when the branch existed before this run (Step 3), rebase it onto the fetched base — only after seeing the panes, never under a running agent:
 1. Every pane must be empty or hold an agent that is `idle` or `done` (`herdr pane get <pane_id>`). `working`, `blocked`, or `unknown`: STOP and report.
@@ -166,21 +166,21 @@ herdr-app do space.new --name "<label>" --folder "<checkout_path>" --tab main --
 
 `<planner argv>` is the JSON array `["<$SHELL>", "-lic", "<env><planner command>; exec \"$SHELL\" -l"]` from Step 5 — build it with a JSON encoder, not by hand. It returns `{ "space", "tab", "terminal" }` and switches the window to the new space — there is no no-focus option. Unless the user asked to jump there, switch back to the space you run in (`.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`, read before `space.new`) once Step 5 has opened its splits — they focus the new space again: `herdr-app do space.select --id <that space>`.
 
-**Step 4 — panes.** Same shape as herdr: `planner` top left, `worker` below it, `reviewer` down the right side. The space's first terminal is the planner. A terminal added with `hc run --label herdr.space=…` lands wherever the window's layout puts it (three columns), so the other two are opened as splits of the planner pane instead, in Step 5. The app keeps no terminal name for them, so every role is marked with an hc label — `hc label <t> planter.role=<planner|worker|reviewer>` — and found by it: walk the space's terminals in `herdr-app ls` and read `.labels["planter.role"]` from `hc get <t> --json`. Label the planner as soon as `space.new` returns.
+**Step 4 — panes.** Same shape as herdr: `planner` down the left side, `worker` top right, `reviewer` below it. The space's first terminal is the planner. A terminal added with `hc run --label herdr.space=…` lands wherever the window's layout puts it (three columns), so the other two are opened as splits instead, in Step 5. The app keeps no terminal name for them, so every role is marked with an hc label — `hc label <t> planter.role=<planner|worker|reviewer>` — and found by it: walk the space's terminals in `herdr-app ls` and read `.labels["planter.role"]` from `hc get <t> --json`. Label the planner as soon as `space.new` returns.
 
 Reuse path: list the space's terminals in `herdr-app ls` before touching anything, and create only what is missing — never a second worker or reviewer. The rebase checks of Step 4 apply unchanged, with `hc get <t> --json` `.status.state` in place of `herdr pane get` (no `.status.app` means a bare shell).
 
 **Step 5 — agents.** Defaults, overrides, and the codex fallback are the table above. Command per kind: claude `claude --model <model> --effort <level>`, codex `codex --no-daemon -m <model> -c model_reasoning_effort=<level>` (`--no-daemon` is required under hc; the daemon setup above does not apply here). `<env>` carries the profile: `CLAUDE_CONFIG_DIR=<value> CODEX_HOME=<value> ` for whichever of the two your own environment sets, each value quoted with `printf %q`, into every terminal whatever its kind. A secret-carried profile is still never put on a command line.
 
 - Planner: a new space starts it through `--argv` above. On the reuse path, a planner terminal at a shell prompt (`hc read <terminal> --lines 5`) gets `hc send <terminal> '<env><command>'`. Do not type into the shell of a space you just made: its startup files may still be loading, and the typed Enter then lands on claude's trust dialog and picks "No, exit".
-- Reviewer, then worker — each a split of the planner pane (its `.pane` id in `herdr-app ls`). `terminal.open` splits the focused pane, so focus the planner pane first, every time:
+- Worker, then reviewer — the worker a split of the planner pane, the reviewer a split of the worker pane (each `.pane` id from `herdr-app ls` or the `terminal.open` result). `terminal.open` splits the focused pane, so focus the pane to split first, every time:
   ```
   herdr-app do pane.focus --pane <planner_pane>
-  herdr-app do terminal.open '{"place": "right", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><reviewer command>; exec \"$SHELL\" -l"]}'
-  herdr-app do pane.focus --pane <planner_pane>
-  herdr-app do terminal.open '{"place": "down", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><worker command>; exec \"$SHELL\" -l"]}'
+  herdr-app do terminal.open '{"place": "right", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><worker command>; exec \"$SHELL\" -l"]}'
+  herdr-app do pane.focus --pane <worker_pane>
+  herdr-app do terminal.open '{"place": "down", "folder": "<checkout_path>", "argv": ["<$SHELL>", "-lic", "<env><reviewer command>; exec \"$SHELL\" -l"]}'
   ```
-  Build each JSON object with a JSON encoder, not by hand. Each call returns `{ "pane", "terminal" }`; label that terminal with its role right away. Right first, then down, gives the full-height reviewer on the right and the worker under the planner. The login shell loads the user's `PATH` (a bare `codex` fails to spawn without it), and `exec "$SHELL" -l` leaves a shell behind if the agent exits.
+  Build each JSON object with a JSON encoder, not by hand. Each call returns `{ "pane", "terminal" }`; label that terminal with its role right away. Right off the planner, then down off the worker, gives the full-height planner on the left and the reviewer under the worker. The login shell loads the user's `PATH` (a bare `codex` fails to spawn without it), and `exec "$SHELL" -l` leaves a shell behind if the agent exits.
   Then switch back to your own space with `space.select` (Step 3).
 
 After each start, `hc wait <t> --timeout 60` returns `idle` once the agent is ready for input; confirm `hc get <t> --json` shows the expected `.status.app` (`claude-code` or `codex`). Anything else — typically a trust dialog for the fresh checkout — read the screen (`hc read <t> --lines 50`) and report it; do not answer it. On the reuse path, a terminal that already runs an agent (`.status.app` set) is kept as it is, as above; if its `.status.app` is not the kind that role should run, say so and ask — never stop it yourself.

@@ -117,7 +117,7 @@ Every hand-off asks the worker or reviewer pane to message the planner pane when
 - [x] herdr: split + label a pane, shell sentinel DONE/FAIL, claude and codex via `herdr agent`
 - [x] herdr: worktree workspace created from a branch + label, reopened by branch, removed
 - [x] Herdr app: `terminal.open` splits the caller's pane right/down with focus given back, shell sentinel via `hc wait --output`, claude and `codex --no-daemon` launched through a login shell, multi-line `hc send --wait`, pane report via `hc send`
-- [x] Herdr app: workshop opens a `git worktree` space with planner top left, worker below, reviewer on the right, roles marked by `planter.role` labels
+- [x] Herdr app: workshop opens a `git worktree` space with planner on the left, worker top right, reviewer below it, roles marked by `planter.role` labels
 - [ ] Herdr app: collab end to end
 - [x] workshop: worktree workspace opens with planner/worker/reviewer panes in the checkout
 - [ ] workshop: base fetched before create, reuse path rebased, default agents started with their model and effort, per-pane override
