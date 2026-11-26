@@ -23,7 +23,7 @@ Use the `pane_id` of the rows labeled `worker` and `reviewer`; your own pane is 
 
 Pane commands (`herdr`, `hc`, `herdr-app`) must run outside any sandbox the tool wraps around shell calls (in Claude Code, Bash with `dangerouslyDisableSandbox: true`).
 
-If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. Start the agent with the kind, model, effort, and profile from planter:workshop Step 5 (worker claude `opus` medium, reviewer codex newest Sol medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
+If a target's `.agent` is empty (or `herdr agent read` returns `agent_not_found`) and its screen shows a shell prompt, it is a bare shell — common after a herdr restart. Anything else on screen (an editor, a running command): report it, never type into it. A restarted pane has no environment, so first run planter:workshop Step 5's exports into it — `PLANTER_WORK` and `COMPOSE_PROJECT_NAME` set to the work name, then the profile variables. The work name is `$PLANTER_WORK` in your own environment; unset (the planner was started outside planter:workshop), derive it from the repo folder and `git branch --show-current` as planter:workshop Step 2 says. Then start the agent with the kind, model, effort, and profile from planter:workshop Step 5 (worker claude `opus` medium, reviewer codex newest Sol medium, unless the user names others). It returns once the agent is ready for input. (Herdr app: the bare-shell check and start command are in the table below.)
 
 ## Hearing back from the panes
 
@@ -49,7 +49,7 @@ Same flow, different commands (planter:tenant-claude's Herdr app section has the
 |---|---|
 | `herdr pane list --workspace "$HERDR_WORKSPACE_ID"`, rows labeled `worker` / `reviewer` | your space is `.labels["herdr.space"]` of `hc get "$HC_TERMINAL_ID" --json`; in `herdr-app ls`, that space's terminals whose `hc get <t> --json` `.labels["planter.role"]` is `worker` / `reviewer` (planter:workshop). Never match roles across spaces. |
 | your pane `$HERDR_PANE_ID` | your terminal `$HC_TERMINAL_ID` |
-| `.agent` empty = bare shell | `hc get <t> --json` without `.status.app` = bare shell; start the agent as planter:workshop's Herdr app Step 5 does |
+| `.agent` empty = bare shell | `hc get <t> --json` without `.status.app` = bare shell; start the agent as planter:workshop's Herdr app Step 5 does, with its `<env>` prefix — work-name variables included |
 | pane reports with `herdr agent prompt <planner_pane_id> "…"` | `hc send <planner_terminal_id> "…"` |
 | backstop `herdr agent prompt <pane_id> '<prompt>' --wait`, no timeout | `hc send --wait --json --timeout 600 <t> '<prompt>'` in the background; `.wait.reason` = `timeout` is a check-in, not a finish — keep watching with `hc wait <t> --timeout 600` in the background |
 | `herdr agent wait <pane_id>` | `hc wait <t> --timeout 600` (again on `timeout`) |
@@ -116,13 +116,23 @@ Prompt the reviewer pane with the plan file path, the verification item numbers,
 
 ## Step 6: Delegate implementation to the worker pane
 
-Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 2 (verification command, commit rules). The worker commits; the planner does not. Tell the worker that anything it newly creates for this work and leaves running or stored outside the checkout (a simulator, a container started by hand) goes in the plan file's `Resources` section with its exact id; without that record, planter:sweep leaves it alone (Compose projects started from this checkout are the one thing it finds by itself). Hear back as in Hearing back from the panes.
+Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 2 (verification command, commit rules). The worker commits; the planner does not.
+
+The prompt also carries the **isolation rule**, with the work name written out as a literal in every command below — never as `$PLANTER_WORK`. A pane whose agent predates the export, or a codex daemon from an earlier session, has no such variable, and an empty one silently yields `--name "-svc"` or `simctl create ""`; exporting it inside the pane does not help either, because each shell call of the agent may start a fresh shell. The rule:
+- Everything started for this work outside the checkout is a fresh instance named after the work — never the default Compose project, the already-booted simulator, or a user-owned browser space. Two workspaces run side by side, and planter:sweep removes what carries the name.
+- Compose: the project is `<work name>`. `COMPOSE_PROJECT_NAME` normally already says so; if your shell lacks it, `export COMPOSE_PROJECT_NAME=<work name>` or pass `-p <work name>` — never a different project name. Fixed host `ports:` that the compose file reads from variables: set those variables per work. No variable: write `~/.claude/plans/<work name>.compose.yml` (the work name keeps two repos on the same issue from writing one file) that redeclares each such service's `ports:` with the `!override` tag (a plain list is appended to the original, not substituted, so the old port still binds), pass it with `-f` after the project's own files, and record it in `Resources`.
+- `docker run`: `--name <work name>-<service> --label planter.work=<work name>`.
+- iOS: `xcrun simctl create <work name> <device type> <runtime>`, then boot that UDID. Android: `avdmanager create avd -n <work name> …`, and run the emulator on a port of its own.
+- Browser (ego-browser): `taskSpace("<work name>")` with the name written into the script — ego-browser scripts do not see shell variables at all; never `claimTaskSpace` / `takeOverTaskSpace` on a user-owned space.
+- The plan file's `Resources` section records the exact id of each thing left running or stored outside the checkout — Compose project, container, simulator UDID or AVD name, task space id, override file path. planter:sweep removes what it lists, and also finds anything carrying the work name by itself.
+
+Hear back as in Hearing back from the panes.
 
 Every later round of implementation — review fixes, rework — also goes to the worker pane. Do not route it to an executor subagent inside the planner pane: the user cannot see that work.
 
 ## Step 7: Diff review — reviewer pane always, CodeRabbit when asked
 
-1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex). Hear back as in Hearing back from the panes.
+1. **Reviewer pane.** Prompt it with the diff range (`origin/<base>...HEAD`), the repo's review contract if it has one, the ticket decisions, the places to attack, read-only, and a screen-output format (not a file — file writes trigger sandbox approvals in Codex). Include the isolation rule from Step 6 in the prompt, with the work name written out, for anything the reviewer starts to check the change — the reviewer never saw the worker's prompt. Hear back as in Hearing back from the panes.
 2. **CodeRabbit CLI.** Only when the user asked for a CodeRabbit review of this work. Being installed is not a request.
    ```
    coderabbit review --base <base> --committed --agent
@@ -155,4 +165,7 @@ Then move the issue to in-review (see Issue status follows the work). Report the
 - Saving screenshots inside the checkout, where they become untracked files the PR or the sweep has to deal with.
 - Letting the planner commit or push code it wrote itself.
 - Hardcoding a transition name like "In Progress" — read the issue's transitions first.
+- A pane running `docker compose` under a project name other than the work name — that stack lands where planter:sweep will not find it.
+- Putting `$PLANTER_WORK` in a worker or reviewer command instead of the work name itself — it may be empty in that shell, and in an ego-browser script it is never expanded.
+- A pane booting the user's already-booted simulator, or claiming their browser space, instead of creating the work's own under the work name.
 - Stopping the flow because a status transition failed.
