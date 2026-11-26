@@ -19,8 +19,11 @@ a sweep removes only what carries its own name.
 ## Goals
 
 - One name per work: `<repo>-<branch>` lowercased, with every character
-  outside `[a-z0-9_-]` turned into `-` (`feat/ABC-123-x` in repo `shop` →
-  `shop-feat-abc-123-x`). Call it the **work name**. The repo is in it
+  outside `[a-z0-9_-]` turned into `-`, then `-` and the first six hex
+  digits of the SHA-1 of the exact `<repo>/<branch>` (`feat/ABC-123-x` in
+  repo `shop` → `shop-feat-abc-123-x-e1f7ce`). Call it the **work name**.
+  The hash keeps branches that flatten alike (`a.b` and `a-b`) apart, so
+  sweep never takes another work's resources for its own. The repo is in it
   because one issue often opens the same branch in two repos at once, and
   those two works must not share a Compose project (final-review finding).
 - Compose is isolated even when an agent forgets to ask for it.
@@ -86,18 +89,21 @@ skills-only, and a script is one more thing every pane must find on `PATH`.
   workshop), it derives the work name from the branch.
 - **Worker prompt (Step 6) and reviewer prompt (Step 7)** carry the
   isolation rule: anything started for this work outside the checkout is a
-  fresh instance named `$PLANTER_WORK`, never the default one.
+  fresh instance named after the work, never the default one. The prompt
+  writes the work name out in every command rather than `$PLANTER_WORK`:
+  the variable may be missing in a pane whose agent predates the export,
+  and each shell call may start a fresh shell.
   - Compose: the project name comes from the environment; never pass another
     `-p`. Fixed host ports: if the compose file reads them from variables,
     set those per work; otherwise write an override file beside the plan
-    file (`~/.claude/plans/<KEY>-<slug>.compose.yml`), pass it with `-f`,
+    file (`~/.claude/plans/<work name>.compose.yml`), pass it with `-f`,
     and record it in `Resources`.
-  - Plain `docker run`: `--name "$PLANTER_WORK-<service>"` and
-    `--label planter.work="$PLANTER_WORK"`.
-  - iOS: `xcrun simctl create "$PLANTER_WORK" <device type> <runtime>` and
+  - Plain `docker run`: `--name <work name>-<service>` and
+    `--label planter.work=<work name>`.
+  - iOS: `xcrun simctl create <work name> <device type> <runtime>` and
     boot that UDID; never the already-booted device. Android:
-    `avdmanager create avd -n "$PLANTER_WORK" …` with a port of its own.
-  - Browser (ego-browser): `taskSpace("$PLANTER_WORK")`; never
+    `avdmanager create avd -n <work name> …` with a port of its own.
+  - Browser (ego-browser): `taskSpace("<work name>")`; never
     `claimTaskSpace` / `takeOverTaskSpace` on a user-owned space.
   - `Resources` keeps recording exact ids as today.
 

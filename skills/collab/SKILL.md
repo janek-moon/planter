@@ -103,12 +103,12 @@ Prompt the reviewer pane with the plan file path, the verification item numbers,
 
 Prompt the worker pane with the plan file path, the checkout path, and the repo's rules you collected in Step 2 (verification command, commit rules). The worker commits; the planner does not.
 
-The prompt also carries the **isolation rule**, with the work name written out — "the work name is `<work name>`; `$PLANTER_WORK` holds it in your shell" — because a pane whose agent predates the export, or a codex daemon from an earlier session, has no such variable, and an empty one would silently yield `--name "-svc"` or `taskSpace("")`. The rule:
+The prompt also carries the **isolation rule**, with the work name written out as a literal in every command below — never as `$PLANTER_WORK`. A pane whose agent predates the export, or a codex daemon from an earlier session, has no such variable, and an empty one silently yields `--name "-svc"` or `simctl create ""`; exporting it inside the pane does not help either, because each shell call of the agent may start a fresh shell. The rule:
 - Everything started for this work outside the checkout is a fresh instance named after the work — never the default Compose project, the already-booted simulator, or a user-owned browser space. Two workspaces run side by side, and planter:sweep removes what carries the name.
-- Compose: the project is `<work name>`. `COMPOSE_PROJECT_NAME` normally already says so; if your shell lacks it, `export COMPOSE_PROJECT_NAME=<work name>` or pass `-p <work name>` — never a different project name. Fixed host `ports:` that the compose file reads from variables: set those variables per work. No variable: write `~/.claude/plans/<KEY>-<slug>.compose.yml` (`<slug>.compose.yml` without an issue) that redeclares each such service's `ports:` with the `!override` tag (a plain list is appended to the original, not substituted, so the old port still binds), pass it with `-f` after the project's own files, and record it in `Resources`.
-- `docker run`: `--name "$PLANTER_WORK-<service>" --label planter.work="$PLANTER_WORK"`.
-- iOS: `xcrun simctl create "$PLANTER_WORK" <device type> <runtime>`, then boot that UDID. Android: `avdmanager create avd -n "$PLANTER_WORK" …`, and run the emulator on a port of its own.
-- Browser (ego-browser): `taskSpace("<work name>")` with the name written into the script — ego-browser scripts do not see your shell's variables, so `"$PLANTER_WORK"` there is a literal string, not the name; never `claimTaskSpace` / `takeOverTaskSpace` on a user-owned space.
+- Compose: the project is `<work name>`. `COMPOSE_PROJECT_NAME` normally already says so; if your shell lacks it, `export COMPOSE_PROJECT_NAME=<work name>` or pass `-p <work name>` — never a different project name. Fixed host `ports:` that the compose file reads from variables: set those variables per work. No variable: write `~/.claude/plans/<work name>.compose.yml` (the work name keeps two repos on the same issue from writing one file) that redeclares each such service's `ports:` with the `!override` tag (a plain list is appended to the original, not substituted, so the old port still binds), pass it with `-f` after the project's own files, and record it in `Resources`.
+- `docker run`: `--name <work name>-<service> --label planter.work=<work name>`.
+- iOS: `xcrun simctl create <work name> <device type> <runtime>`, then boot that UDID. Android: `avdmanager create avd -n <work name> …`, and run the emulator on a port of its own.
+- Browser (ego-browser): `taskSpace("<work name>")` with the name written into the script — ego-browser scripts do not see shell variables at all; never `claimTaskSpace` / `takeOverTaskSpace` on a user-owned space.
 - The plan file's `Resources` section records the exact id of each thing left running or stored outside the checkout — Compose project, container, simulator UDID or AVD name, task space id, override file path. planter:sweep removes what it lists, and also finds anything carrying the work name by itself.
 
 Hear back as in Hearing back from the panes.
@@ -149,6 +149,6 @@ Then move the issue to in-review (see Issue status follows the work). Report the
 - Letting the planner commit or push code it wrote itself.
 - Hardcoding a transition name like "In Progress" — read the issue's transitions first.
 - A pane running `docker compose` under a project name other than the work name — that stack lands where planter:sweep will not find it.
-- Writing `"$PLANTER_WORK"` inside an ego-browser script — it stays a literal there; write the work name out.
-- A pane booting the user's already-booted simulator, or claiming their browser space, instead of creating the work's own under `$PLANTER_WORK`.
+- Putting `$PLANTER_WORK` in a worker or reviewer command instead of the work name itself — it may be empty in that shell, and in an ego-browser script it is never expanded.
+- A pane booting the user's already-booted simulator, or claiming their browser space, instead of creating the work's own under the work name.
 - Stopping the flow because a status transition failed.
